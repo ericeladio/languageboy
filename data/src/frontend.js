@@ -37,7 +37,7 @@ class EJS_Frontend {
     localization(text, log) {
         if (typeof text === "undefined" || text.length === 0) return;
         text = text.toString();
-        if (text.includes("EmulatorJS v")) return text;
+        if (text.includes("LanguageBoy v")) return text;
         if (this.ejs.config.langJson) {
             if (typeof log === "undefined") log = true;
             if (!this.ejs.config.langJson[text] && log) {
@@ -110,7 +110,411 @@ class EJS_Frontend {
         this.game.classList.remove("ejs_game");
         this.game.classList.add("ejs_canvas_parent");
         this.game.appendChild(this.canvas);
+        this.dualPanel = this.ejs.createElement("div");
+        this.dualPanel.classList.add("ejs_dual_panel");
+        this.dualGamepadLayer = this.ejs.createElement("div");
+        this.dualGamepadLayer.classList.add("ejs_dual_gamepad");
+        this.dualPadTranslateButton = this.ejs.createElement("button");
+        this.dualPadTranslateButton.classList.add("ejs_dual_pad_translate");
+        this.dualPadTranslateButton.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.87 15.07l-2.54-2.51.03-.03A17.52 17.52 0 0014.07 6H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c7.02 1.17 13.05 5.22 14.37 11.27l2.22-2.19zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/></svg>';
+        this.dualPadTranslateButton.title = this.localization("Translate");
+        this.dualPadTranslateButton.addEventListener("click", () => {
+            this.setDualView("translate");
+            this.analyzeScreenshot();
+        });
+        this.dualGamepadLayer.appendChild(this.dualPadTranslateButton);
+        this.dualPanel.appendChild(this.dualGamepadLayer);
+        this.dualTranslateView = this.ejs.createElement("div");
+        this.dualTranslateView.classList.add("ejs_dual_translate_view");
+        this.ankiCards = JSON.parse(localStorage.getItem("languageboy-anki") || "[]");
+        const langRow = this.ejs.createElement("div");
+        langRow.classList.add("ejs_dual_lang_row");
+        this.dualLangOptions = [
+            { code: "en", ocr: "eng", name: "English" },
+            { code: "es", ocr: "spa", name: "Español" },
+            { code: "ja", ocr: "jpn", name: "日本語" },
+            { code: "it", ocr: "ita", name: "Italiano" }
+        ];
+        const validCode = (code) => this.dualLangOptions.some(l => l.code === code) ? code : null;
+        this.dualLangFrom = validCode(this.ejs.preGetSetting("dual-ocr-from")) || "en";
+        this.dualLangTo = validCode(this.ejs.preGetSetting("dual-ocr-to")) || "es";
+        const makeLangSelect = (selected, onChange) => {
+            const select = this.ejs.createElement("select");
+            select.classList.add("ejs_dual_lang_select");
+            for (const lang of this.dualLangOptions) {
+                const opt = this.ejs.createElement("option");
+                opt.value = lang.code;
+                opt.textContent = lang.name;
+                if (lang.code === selected) opt.selected = true;
+                select.appendChild(opt);
+            }
+            select.addEventListener("change", () => onChange(select.value));
+            return select;
+        };
+        const saveLangSettings = () => {
+            if (typeof this.changeSettingOption === "function") {
+                this.changeSettingOption("dual-ocr-from", this.dualLangFrom);
+                this.changeSettingOption("dual-ocr-to", this.dualLangTo);
+                this.ejs.saveSettings();
+            }
+        };
+        langRow.appendChild(makeLangSelect(this.dualLangFrom, (v) => { this.dualLangFrom = v; saveLangSettings(); this.analyzeScreenshot(); }));
+        langRow.appendChild(makeLangSelect(this.dualLangTo, (v) => { this.dualLangTo = v; saveLangSettings(); this.analyzeScreenshot(); }));
+        const backButton = this.ejs.createElement("button");
+        backButton.classList.add("ejs_dual_back");
+        backButton.title = this.localization("Back");
+        backButton.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>';
+        backButton.addEventListener("click", () => this.setDualView("pad"));
+        langRow.appendChild(backButton);
+        const retranslateButton = this.ejs.createElement("button");
+        retranslateButton.classList.add("ejs_dual_retranslate");
+        retranslateButton.title = this.localization("Translate");
+        retranslateButton.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.87 15.07l-2.54-2.51.03-.03A17.52 17.52 0 0014.07 6H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c7.02 1.17 13.05 5.22 14.37 11.27l2.22-2.19zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/></svg>';
+        retranslateButton.addEventListener("click", () => this.analyzeScreenshot());
+        langRow.appendChild(retranslateButton);
+        this.dualSaveCardButton = this.ejs.createElement("button");
+        this.dualSaveCardButton.classList.add("ejs_dual_save_card");
+        this.dualSaveCardButton.title = this.localization("Save card");
+        this.dualSaveCardButton.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>';
+        this.dualSaveCardButton.addEventListener("click", () => this.saveAnkiCard());
+        langRow.appendChild(this.dualSaveCardButton);
+        this.dualTranslateView.appendChild(langRow);
+        this.dualResult = this.ejs.createElement("div");
+        this.dualResult.classList.add("ejs_dual_result");
+        this.dualResultStatus = this.ejs.createElement("div");
+        this.dualResultStatus.classList.add("ejs_dual_status");
+        this.dualResultOriginal = this.ejs.createElement("div");
+        this.dualResultOriginal.classList.add("ejs_dual_result_original");
+        this.dualResultTranslation = this.ejs.createElement("div");
+        this.dualResultTranslation.classList.add("ejs_dual_result_translation");
+        this.dualResult.appendChild(this.dualResultStatus);
+        this.dualResult.appendChild(this.dualResultOriginal);
+        this.dualResult.appendChild(this.dualResultTranslation);
+        this.dualTranslateView.appendChild(this.dualResult);
+        this.dualPanel.appendChild(this.dualTranslateView);
+        this.dualFrame = this.ejs.createElement("div");
+        this.dualFrame.classList.add("ejs_dual_frame");
+        this.game.appendChild(this.dualFrame);
+        this.game.appendChild(this.dualPanel);
         this.handleResize();
+        if (this.ejs.preGetSetting("dual-screen") === "enabled") this.setDualScreen(true);
+    }
+    setDualView(view) {
+        this.elements.parent.classList.toggle("ejs_translate_view", view === "translate");
+    }
+    setDualResult(mode, original, translation) {
+        if (!this.dualResult) return;
+        this.dualResult.classList.add("active");
+        this.dualResultStatus.textContent = mode || "";
+        this.dualResultStatus.style.display = mode ? "" : "none";
+        this.dualResultOriginal.textContent = original || "";
+        this.dualResultOriginal.style.display = original ? "" : "none";
+        this.dualResultTranslation.textContent = translation || "";
+        this.dualResultTranslation.style.display = translation ? "" : "none";
+    }
+    saveAnkiCard() {
+        const en = (this.lastOcrText || "").trim();
+        const es = (this.lastTranslation || "").trim();
+        if (!en || !es || en === "NO TEXT FOUND" || es === "TRANSLATION FAILED") {
+            this.displayMessage(this.localization("Nothing to save"));
+            return;
+        }
+        if (!this.ankiCards) this.ankiCards = [];
+        this.ankiCards.push({ en: en, es: es, ts: Date.now() });
+        localStorage.setItem("languageboy-anki", JSON.stringify(this.ankiCards));
+        this.displayMessage(this.localization("Card saved") + " (" + this.ankiCards.length + ")");
+    }
+    openAnkiExport() {
+        if (!this.ankiCards) this.ankiCards = [];
+        const popup = this.createPopup("Export Anki", {
+            "Generate": () => this.exportAnkiCards(),
+            "Clear All": () => {
+                this.ankiCards = [];
+                localStorage.setItem("languageboy-anki", "[]");
+                this.closePopup();
+            },
+            "Close": () => this.closePopup()
+        });
+        if (this.ankiCards.length === 0) {
+            const empty = this.ejs.createElement("div");
+            empty.classList.add("ejs_anki_empty");
+            empty.innerText = this.localization("No saved cards yet");
+            popup.appendChild(empty);
+            return;
+        }
+        const list = this.ejs.createElement("div");
+        list.classList.add("ejs_anki_list");
+        this.ankiCards.forEach((card, i) => {
+            const item = this.ejs.createElement("div");
+            item.classList.add("ejs_anki_item");
+            const texts = this.ejs.createElement("div");
+            texts.classList.add("ejs_anki_texts");
+            const en = this.ejs.createElement("div");
+            en.classList.add("ejs_anki_item_en");
+            en.innerText = card.en;
+            const es = this.ejs.createElement("div");
+            es.classList.add("ejs_anki_item_es");
+            es.innerText = card.es;
+            texts.appendChild(en);
+            texts.appendChild(es);
+            const remove = this.ejs.createElement("button");
+            remove.classList.add("ejs_anki_remove");
+            remove.innerText = "✕";
+            remove.addEventListener("click", () => {
+                this.ankiCards.splice(i, 1);
+                localStorage.setItem("languageboy-anki", JSON.stringify(this.ankiCards));
+                this.closePopup();
+                this.openAnkiExport();
+            });
+            item.appendChild(texts);
+            item.appendChild(remove);
+            list.appendChild(item);
+        });
+        popup.appendChild(list);
+        const counter = this.ejs.createElement("div");
+        counter.classList.add("ejs_anki_counter");
+        counter.innerText = this.ankiCards.length + " cards";
+        popup.appendChild(counter);
+    }
+    async generateCardAudio(text, voice) {
+        const base = "https://api.soundoftext.com/sounds";
+        const r = await fetch(base, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ engine: "Google", data: { text: text, voice: voice || "en-US" } })
+        });
+        if (!r.ok) throw new Error("soundoftext post failed");
+        const j = await r.json();
+        if (!j.id) throw new Error("no sound id");
+        await new Promise(res => setTimeout(res, 2000));
+        const status = await fetch(base + "/" + j.id);
+        const sj = await status.json();
+        if (!sj.location) throw new Error("no audio location");
+        const audioRes = await fetch(sj.location);
+        return await audioRes.blob();
+    }
+    async exportAnkiCards() {
+        const cards = this.ankiCards || [];
+        if (cards.length === 0) return;
+        const rows = [];
+        let audioOk = true;
+        for (let i = 0; i < cards.length; i++) {
+            this.displayMessage(this.localization("Generating audio") + " " + (i + 1) + "/" + cards.length);
+            let audioField = "";
+            try {
+                const blob = await this.generateCardAudio(cards[i].en, "en-US");
+                const safeName = cards[i].en.replace(/[^a-zA-Z0-9 ]/g, "").trim().replace(/\s+/g, "_") + "_" + i + ".mp3";
+                const a = this.ejs.createElement("a");
+                a.href = URL.createObjectURL(blob);
+                a.download = safeName;
+                a.click();
+                await new Promise(res => setTimeout(res, 500));
+                audioField = "[sound:" + safeName + "]";
+            } catch (e) {
+                audioOk = false;
+                if (this.ejs.debug) console.log("audio error:", e);
+            }
+            rows.push([cards[i].en, cards[i].es, cards[i].en, audioField]);
+        }
+        const csvRows = [["English", "Spanish", "Example", "Audio"]].concat(rows);
+        const csv = csvRows.map(r => r.map(c => '"' + String(c).replace(/"/g, '""') + '"').join(";")).join("\n");
+        const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = this.ejs.createElement("a");
+        a.href = url;
+        a.download = "anki_cards.csv";
+        a.click();
+        URL.revokeObjectURL(url);
+        this.closePopup();
+        this.displayMessage(audioOk ? this.localization("Exported") : this.localization("Exported without audio"));
+    }
+    ensureTesseract() {
+        if (window.Tesseract) return Promise.resolve(window.Tesseract);
+        if (this.tesseractLoading) return this.tesseractLoading;
+        this.tesseractLoading = new Promise((resolve, reject) => {
+            const script = this.ejs.createElement("script");
+            script.src = "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
+            script.onload = () => resolve(window.Tesseract);
+            script.onerror = () => {
+                this.tesseractLoading = null;
+                reject(new Error("OCR library failed to load"));
+            };
+            document.head.appendChild(script);
+        });
+        return this.tesseractLoading;
+    }
+    async ocrRecognize(blob, ocrLang) {
+        const Tesseract = await this.ensureTesseract();
+        if (!this.ocrWorkers) this.ocrWorkers = {};
+        if (!this.ocrWorkers[ocrLang]) {
+            this.ocrWorkers[ocrLang] = await Tesseract.createWorker(ocrLang, 1);
+        }
+        const result = await this.ocrWorkers[ocrLang].recognize(blob);
+        return (result.data.text || "").trim();
+    }
+    async translateText(text, from, to) {
+        if (from === to) return text;
+        const chunkSize = 450;
+        const maxChunks = 8;
+        const chunks = [];
+        for (let i = 0; i < text.length && chunks.length < maxChunks; i += chunkSize) {
+            chunks.push(text.slice(i, i + chunkSize));
+        }
+        const translated = [];
+        for (const chunk of chunks) {
+            translated.push(await this.translateChunk(chunk, from, to));
+        }
+        return translated.join(" ");
+    }
+    async translateChunk(text, from, to) {
+        let gtxOut = "";
+        try {
+            const url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=" +
+                encodeURIComponent(from) + "&tl=" + encodeURIComponent(to) + "&dt=t&q=" + encodeURIComponent(text);
+            const res = await fetch(url);
+            if (res.ok) {
+                const data = await res.json();
+                if (Array.isArray(data) && Array.isArray(data[0]) && data[0].length) {
+                    gtxOut = data[0].map(seg => Array.isArray(seg) ? seg[0] : "").join("");
+                }
+            }
+        } catch (e) {
+            gtxOut = "";
+        }
+        if (gtxOut) return gtxOut;
+        const fallbackUrl = "https://api.mymemory.translated.net/get?q=" + encodeURIComponent(text) +
+            "&langpair=" + encodeURIComponent(from + "|" + to);
+        const res = await fetch(fallbackUrl);
+        if (!res.ok) throw new Error("Translation HTTP " + res.status);
+        const data = await res.json();
+        const out = data && data.responseData && data.responseData.translatedText;
+        if (!out || /^MYMEMORY WARNING/i.test(out)) throw new Error("Translation failed");
+        return out;
+    }
+    analyzeScreenshot() {
+        if (this.dualAnalyzing) {
+            this.dualAnalyzingPending = true;
+            return;
+        }
+        this.dualAnalyzing = true;
+        this.setDualResult("ANALYZING…");
+        const fromLang = this.dualLangOptions.find(l => l.code === this.dualLangFrom) || this.dualLangOptions[0];
+        const toLang = this.dualLangOptions.find(l => l.code === this.dualLangTo) || this.dualLangOptions[0];
+        this.ejs.screenshot(async (blob) => {
+            try {
+                const text = await this.ocrRecognize(blob, fromLang.ocr);
+                if (!text) {
+                    this.setDualResult("NO TEXT FOUND");
+                    return;
+                }
+                this.setDualResult("TRANSLATING…");
+                const translated = await this.translateText(text, fromLang.code, toLang.code);
+                this.lastOcrText = text;
+                this.lastTranslation = translated;
+                this.setDualResult("", text, translated);
+            } catch (e) {
+                this.setDualResult("TRANSLATION FAILED");
+                if (this.ejs.debug) console.log("translate error:", e);
+            } finally {
+                this.dualAnalyzing = false;
+                if (this.dualAnalyzingPending) {
+                    this.dualAnalyzingPending = false;
+                    this.analyzeScreenshot();
+                }
+            }
+        });
+    }
+    setDualScreen(enabled) {
+        this.dualScreenEnabled = !!enabled && this.ejs.getCore(true) !== "nds";
+        this.elements.parent.classList.toggle("ejs_dual_screen", this.dualScreenEnabled);
+        if (!this.dualScreenEnabled) {
+            this.setDualView("pad");
+            if (this.dualPanel) {
+                this.dualPanel.style.left = "";
+                this.dualPanel.style.top = "";
+                this.dualPanel.style.width = "";
+                this.dualPanel.style.height = "";
+            }
+            if (this.dualFrame) {
+                this.dualFrame.style.left = "";
+                this.dualFrame.style.top = "";
+                this.dualFrame.style.width = "";
+                this.dualFrame.style.height = "";
+            }
+            if (this.dualPadTranslateButton) {
+                this.dualPadTranslateButton.style.left = "";
+                this.dualPadTranslateButton.style.top = "";
+                this.dualPadTranslateButton.style.right = "";
+            }
+            if (this.virtualGamepad) {
+                this.virtualGamepad.style.left = "";
+                this.virtualGamepad.style.right = "";
+                this.virtualGamepad.style.width = "";
+                this.virtualGamepad.style.bottom = "";
+            }
+        } else {
+            this.syncDualScreenSize();
+        }
+        if (typeof this.changeSettingOption === "function") {
+            this.changeSettingOption("dual-screen", this.dualScreenEnabled ? "enabled" : "disabled");
+            this.ejs.saveSettings();
+        }
+    }
+    syncDualScreenSize() {
+        if (!this.dualScreenEnabled || !this.dualPanel || !this.canvas) return;
+        const cr = this.canvas.getBoundingClientRect();
+        if (!cr.width || !cr.height) return;
+        let aspect = 1.5;
+        try {
+            aspect = this.ejs.gameManager.getVideoDimensions("aspect") || (this.canvas.width / this.canvas.height) || aspect;
+        } catch (e) {}
+        if (!aspect || !isFinite(aspect)) aspect = this.canvas.width / this.canvas.height || 1.5;
+        let gw, gh;
+        if (cr.width / cr.height > aspect) {
+            gh = cr.height;
+            gw = cr.height * aspect;
+        } else {
+            gw = cr.width;
+            gh = cr.width / aspect;
+        }
+        const gr = this.game.getBoundingClientRect();
+        const gameLeft = Math.round(cr.left - gr.left + (cr.width - gw) / 2);
+        const gameTop = Math.round(cr.top - gr.top + (cr.height - gh) / 2);
+        const panelWidth = Math.round(gw);
+        const panelHeight = Math.round(gh);
+        this.dualPanel.style.left = gameLeft + "px";
+        this.dualPanel.style.top = (gameTop + panelHeight) + "px";
+        this.dualPanel.style.width = panelWidth + "px";
+        this.dualPanel.style.height = panelHeight + "px";
+        if (this.dualFrame) {
+            const frameInset = 10;
+            this.dualFrame.style.left = (gameLeft - frameInset) + "px";
+            this.dualFrame.style.top = (gameTop - frameInset) + "px";
+            this.dualFrame.style.width = (panelWidth + frameInset * 2) + "px";
+            this.dualFrame.style.height = (panelHeight * 2 + frameInset * 2) + "px";
+        }
+        if (this.virtualGamepad) {
+            const pr = this.elements.parent.getBoundingClientRect();
+            const panelRect = this.dualPanel.getBoundingClientRect();
+            this.virtualGamepad.style.left = Math.round(panelRect.left - pr.left) + "px";
+            this.virtualGamepad.style.right = "auto";
+            this.virtualGamepad.style.width = Math.round(panelRect.width) + "px";
+            this.virtualGamepad.style.bottom = Math.round(Math.max(50, pr.bottom - panelRect.bottom)) + "px";
+            if (this.dualPadTranslateButton) {
+                const startBtn = this.virtualGamepad.querySelector(".b_start");
+                const dpadMain = this.virtualGamepad.querySelector(".ejs_dpad_main");
+                if (startBtn && dpadMain) {
+                    const sr = startBtn.getBoundingClientRect();
+                    const dr = dpadMain.getBoundingClientRect();
+                    const bw = this.dualPadTranslateButton.offsetWidth;
+                    const bh = this.dualPadTranslateButton.offsetHeight;
+                    this.dualPadTranslateButton.style.left = Math.round(sr.left + sr.width / 2 - panelRect.left - bw / 2) + "px";
+                    this.dualPadTranslateButton.style.top = Math.round(dr.top + dr.height / 2 - panelRect.top - bh / 2) + "px";
+                    this.dualPadTranslateButton.style.right = "auto";
+                    this.dualPadTranslateButton.style.bottom = "auto";
+                }
+            }
+        }
     }
     showVirtualGamepad() {
         this.virtualGamepad.style.display = "";
@@ -569,9 +973,9 @@ class EJS_Frontend {
             save: qSave,
             load: qLoad
         }
-        addButton("EmulatorJS v" + this.ejs.ejs_version, false, () => {
+        addButton("LanguageBoy v" + this.ejs.ejs_version, false, () => {
             hideMenu();
-            const body = this.createPopup("EmulatorJS", {
+            const body = this.createPopup("LanguageBoy", {
                 "Close": () => {
                     this.closePopup();
                 }
@@ -614,7 +1018,7 @@ class EJS_Frontend {
             body.appendChild(retroarch);
             body.appendChild(coreLicense);
 
-            home.innerText = "EmulatorJS v" + this.ejs.ejs_version;
+            home.innerText = "LanguageBoy v" + this.ejs.ejs_version;
             home.appendChild(this.ejs.createElement("br"));
             home.appendChild(this.ejs.createElement("br"));
 
@@ -629,7 +1033,7 @@ class EJS_Frontend {
 
             const info = this.ejs.createElement("div");
 
-            this.createLink(info, "https://emulatorjs.org", "EmulatorJS");
+            this.createLink(info, "https://emulatorjs.org", "LanguageBoy");
             // I do not like using innerHTML, though this should be "safe"
             info.innerHTML += " is powered by ";
             this.createLink(info, "https://github.com/libretro/RetroArch/", "RetroArch");
@@ -662,7 +1066,7 @@ class EJS_Frontend {
             addButton("Home", false, (li) => {
                 setElem(home, li);
             }).classList.add("ejs_active_list_element");
-            addButton("EmulatorJS License", false, (li) => {
+            addButton("LanguageBoy License", false, (li) => {
                 setElem(license, li);
             });
             addButton("RetroArch License", false, (li) => {
@@ -1070,7 +1474,11 @@ class EJS_Frontend {
             }
             this.ejs.netplay.openMenu();
         });
-        
+
+        const dualScreenButton = addButton(this.ejs.config.buttonOpts.dualScreen, () => {
+            this.setDualScreen(!this.dualScreenEnabled);
+        });
+
         // add custom buttons
         // get all elements from this.ejs.config.buttonOpts with custom: true
         if (this.ejs.config.buttonOpts) {
@@ -1258,7 +1666,7 @@ class EJS_Frontend {
 
                 this.ejs.addEventListener(submit, "click", (e) => {
                     popups[0].remove();
-                    const body = this.createPopup("EmulatorJS has exited", {});
+                    const body = this.createPopup("LanguageBoy has exited", {});
                     setTimeout(() => {
                         this.ejs.callEvent("exit");
                     }, 20);
@@ -1305,6 +1713,7 @@ class EJS_Frontend {
             saveSavFiles: [saveSavFiles],
             loadSavFiles: [loadSavFiles],
             netplay: [netplay],
+            dualScreen: [dualScreenButton],
             exit: [exitEmulation],
             mute: [muteButton, unmuteButton],
             volumeSlider: [volumeSlider]
@@ -1335,6 +1744,7 @@ class EJS_Frontend {
             if (this.ejs.config.buttonOpts.cheat.visible === false) cheatMenu.style.display = "none";
             if (this.ejs.config.buttonOpts.cacheManager.visible === false) cache.style.display = "none";
             if (this.ejs.config.buttonOpts.netplay.visible === false) netplay.style.display = "none";
+            if (this.ejs.config.buttonOpts.dualScreen.visible === false || this.ejs.getCore(true) === "nds") dualScreenButton.style.display = "none";
             if (this.ejs.config.buttonOpts.diskButton.visible === false) diskButton[0].style.display = "none";
             if (this.ejs.config.buttonOpts.volumeSlider.visible === false) volumeSlider.style.display = "none";
             if (this.ejs.config.buttonOpts.exitEmulation.visible === false) exitEmulation.style.display = "none";
@@ -1363,6 +1773,7 @@ class EJS_Frontend {
             cheatMenu.style.display = "none";
             cache.style.display = "none";
             netplay.style.display = "none";
+            dualScreenButton.style.display = "none";
             diskButton[0].style.display = "none";
             volumeSlider.style.display = "none";
             exitEmulation.style.display = "none";
@@ -2632,6 +3043,7 @@ class EJS_Frontend {
         const leftHandedMode = false;
         const blockCSS = "height:31px;text-align:center;border:1px solid #ccc;border-radius:5px;line-height:31px;";
         const controlSchemeCls = `cs_${this.ejs.getControlScheme()}`.split(/\s/g).join("_");
+        const vpadLastTouch = { t: 0 };
 
         for (let i = 0; i < info.length; i++) {
             if (info[i].type !== "button") continue;
@@ -2676,10 +3088,17 @@ class EJS_Frontend {
                 elems[info[i].location].appendChild(button);
                 const value = info[i].input_new_cores || info[i].input_value;
                 let downValue = info[i].joystickInput === true ? 0x7fff : 1;
-                this.ejs.addEventListener(button, "touchstart touchend touchcancel", (e) => {
+                this.ejs.addEventListener(button, "touchstart touchend touchcancel mousedown mouseup mouseleave", (e) => {
+                    if (e.type === "touchstart" || e.type === "touchend" || e.type === "touchcancel") {
+                        vpadLastTouch.t = Date.now();
+                    } else if (Date.now() - vpadLastTouch.t < 500) {
+                        return;
+                    }
                     e.preventDefault();
                     const isAnalog = this.ejs.analogAxes.includes(value);
-                    if (e.type === "touchend" || e.type === "touchcancel") {
+                    const isRelease = e.type === "touchend" || e.type === "touchcancel" || e.type === "mouseup" || e.type === "mouseleave";
+                    if (isRelease) {
+                        if ((e.type === "mouseup" || e.type === "mouseleave") && !e.target.classList.contains("ejs_virtualGamepad_button_down")) return;
                         e.target.classList.remove("ejs_virtualGamepad_button_down");
                         window.setTimeout(() => {
                             this.ejs.stopAutofire(0, value);
@@ -2716,9 +3135,15 @@ class EJS_Frontend {
             dpadMain.appendChild(horizontal);
 
             const updateCb = (e) => {
+                if (e.type === "touchstart" || e.type === "touchmove") {
+                    vpadLastTouch.t = Date.now();
+                } else if (Date.now() - vpadLastTouch.t < 500) {
+                    return;
+                }
+                if (e.type === "mousemove" && !e.buttons) return;
                 e.preventDefault();
-                const touch = e.targetTouches[0];
-                if (!touch) return;
+                const touch = (e.targetTouches && e.targetTouches[0]) || (e.touches && e.touches[0]) || e;
+                if (!touch || touch.clientX === undefined) return;
                 const rect = dpadMain.getBoundingClientRect();
                 const x = touch.clientX - rect.left - dpadMain.clientWidth / 2;
                 const y = touch.clientY - rect.top - dpadMain.clientHeight / 2;
@@ -2763,6 +3188,10 @@ class EJS_Frontend {
                 callback(up, down, left, right);
             }
             const cancelCb = (e) => {
+                if (e.type === "mouseup" || e.type === "mouseleave") {
+                    if (Date.now() - vpadLastTouch.t < 500) return;
+                    if (!dpadMain.classList.contains("ejs_dpad_up_pressed") && !dpadMain.classList.contains("ejs_dpad_down_pressed") && !dpadMain.classList.contains("ejs_dpad_left_pressed") && !dpadMain.classList.contains("ejs_dpad_right_pressed")) return;
+                }
                 e.preventDefault();
                 dpadMain.classList.remove("ejs_dpad_up_pressed");
                 dpadMain.classList.remove("ejs_dpad_down_pressed");
@@ -2772,8 +3201,8 @@ class EJS_Frontend {
                 callback(0, 0, 0, 0);
             }
 
-            this.ejs.addEventListener(dpadMain, "touchstart touchmove", updateCb);
-            this.ejs.addEventListener(dpadMain, "touchend touchcancel", cancelCb);
+            this.ejs.addEventListener(dpadMain, "touchstart touchmove mousedown mousemove", updateCb);
+            this.ejs.addEventListener(dpadMain, "touchend touchcancel mouseup mouseleave", cancelCb);
 
 
             container.appendChild(dpadMain);
@@ -2994,6 +3423,7 @@ class EJS_Frontend {
 
         if (!this.handleSettingsResize) return;
         this.handleSettingsResize();
+        if (this.dualScreenEnabled) this.syncDualScreenSize();
     }
     getElementSize(element) {
         let elem = element.cloneNode(true);
@@ -3290,6 +3720,17 @@ class EJS_Frontend {
         }
 
         const home = createSettingParent();
+
+        const ankiRow = this.ejs.createElement("div");
+        ankiRow.classList.add("ejs_settings_main_bar");
+        const ankiSpan = this.ejs.createElement("span");
+        ankiSpan.innerText = "Export Anki";
+        const ankiCurrent = this.ejs.createElement("div");
+        ankiCurrent.classList.add("ejs_settings_main_bar_selected");
+        ankiSpan.appendChild(ankiCurrent);
+        ankiRow.appendChild(ankiSpan);
+        ankiRow.addEventListener("click", () => this.openAnkiExport());
+        home.appendChild(ankiRow);
 
         this.handleSettingsResize = () => {
             let needChange = false;
