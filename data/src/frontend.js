@@ -1498,6 +1498,28 @@ class EJS_Frontend {
         this.createCheatsMenu();
         this.setVirtualGamepad();
         this.ejs.addEventListener(this.elements.parent, "keydown keyup", this.ejs.keyChange.bind(this.ejs));
+        this.ejs.addEventListener(this.elements.parent, "keydown", (e) => {
+            if (e.repeat) return;
+            if (!this.ejs.started) return;
+            if (this.isRemapping()) return;
+            if (this.isSettingsMenuOpen() || this.isPopupOpen()) return;
+            if (this.ejs.getSettingValue("keyboardInput") === "enabled") return;
+            if (e.keyCode !== 84 && e.key !== "t" && e.key !== "T") return; // T -> translate
+            e.preventDefault();
+            this.setDualView("translate");
+            this.analyzeScreenshot();
+        });
+        this.ejs.addEventListener(document, "keydown", (e) => {
+            if (e.repeat) return;
+            if (!this.ejs.started) return;
+            if (this.isRemapping()) return;
+            if (this.isSettingsMenuOpen() || this.isPopupOpen()) return;
+            if (this.ejs.getSettingValue("keyboardInput") === "enabled") return;
+            if (e.keyCode !== 84 && e.key !== "t" && e.key !== "T") return; // T -> translate
+            e.preventDefault();
+            this.setDualView("translate");
+            this.analyzeScreenshot();
+        }, true);
         this.ejs.addEventListener(this.elements.parent, "mousedown touchstart", (e) => {
             if (document.activeElement !== this.elements.parent && this.ejs.config.noAutoFocus !== true) this.elements.parent.focus();
         })
@@ -3177,7 +3199,8 @@ class EJS_Frontend {
             { id: 26, label: this.localization("CHANGE STATE SLOT") },
             { id: 27, label: this.localization("FAST FORWARD") },
             { id: 29, label: this.localization("SLOW MOTION") },
-            { id: 28, label: this.localization("REWIND") }
+            { id: 28, label: this.localization("REWIND") },
+            { id: 30, label: this.localization("TRANSLATE") }
         );
         let nums = [];
         for (let i = 0; i < buttons.length; i++) {

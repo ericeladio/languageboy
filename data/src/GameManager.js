@@ -265,7 +265,7 @@ IF EXIST AUTORUN.BAT CALL AUTORUN.BAT
             this.EJS.netplay.simulateInput(player, index, value);
             return;
         }
-        if ([24, 25, 26, 27, 28, 29].includes(index)) {
+        if ([24, 25, 26, 27, 28, 29, 30].includes(index)) {
             if (index === 24 && value === 1) {
                 const slot = this.EJS.frontend.settings["save-state-slot"] ? this.EJS.frontend.settings["save-state-slot"] : "1";
                 if (this.quickSave(slot)) {
@@ -300,6 +300,10 @@ IF EXIST AUTORUN.BAT CALL AUTORUN.BAT
                 if (this.EJS.rewindEnabled) {
                     this.functions.toggleRewind(value);
                 }
+            }
+            if (index === 30 && value === 1) {
+                this.EJS.frontend.setDualView("translate");
+                this.EJS.frontend.analyzeScreenshot();
             }
             return;
         }

@@ -1491,6 +1491,7 @@ class EmulatorJS {
                 27: {},
                 28: {},
                 29: {},
+                30: { "value": "t", "value2": "RIGHT_BOTTOM_SHOULDER" },
             },
             1: {},
             2: {},
@@ -1603,7 +1604,7 @@ class EmulatorJS {
     }
     setupKeys() {
         for (let i = 0; i < 4; i++) {
-            for (let j = 0; j < 30; j++) {
+            for (let j = 0; j < 31; j++) {
                 if (this.controls[i][j]) {
                     this.controls[i][j].value = parseInt(this.keyLookup(this.controls[i][j].value));
                     if (this.controls[i][j].value === -1 && this.debug) {
@@ -1683,9 +1684,10 @@ class EmulatorJS {
             return;
         }
         if (this.frontend.isSettingsMenuOpen() || this.frontend.isPopupOpen() || this.getSettingValue("keyboardInput") === "enabled") return;
+        if (e.keyCode === 84 || e.key === "t" || e.key === "T") return; // T -> translation handled by frontend
         e.preventDefault();
         for (let i = 0; i < 4; i++) {
-            for (let j = 0; j < 30; j++) {
+            for (let j = 0; j < 31; j++) {
                 if (this.controls[i][j] && this.controls[i][j].value === e.keyCode) {
                     const isAnalog = this.analogAxes.includes(j);
                     const inputValue = isAnalog ? 0x7fff : 1;
@@ -1742,7 +1744,7 @@ class EmulatorJS {
         if (this.frontend.isSettingsMenuOpen() || this.frontend.isPopupOpen()) return;
         for (let i = 0; i < 4; i++) {
             if (gamepadIndex !== i) continue;
-            for (let j = 0; j < 30; j++) {
+            for (let j = 0; j < 31; j++) {
                 if (!this.controls[i][j] || this.controls[i][j].value2 === undefined) {
                     continue;
                 }
