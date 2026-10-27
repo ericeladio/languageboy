@@ -1,30 +1,26 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#4fc3f7"/>
-      <stop offset="100%" stop-color="#0288d1"/>
-    </linearGradient>
-    <linearGradient id="pad" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#29b6f6"/>
-      <stop offset="100%" stop-color="#0277bd"/>
-    </linearGradient>
-  </defs>
-  <circle cx="256" cy="220" r="200" fill="url(#bg)"/>
-  <rect x="46" y="120" width="420" height="200" rx="40" fill="url(#pad)" stroke="#0d2137" stroke-width="14"/>
-  <g fill="#0d2137">
-    <rect x="100" y="180" width="36" height="80" rx="6"/>
-    <rect x="78" y="202" width="80" height="36" rx="6"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="languageboy-title languageboy-desc">
+  <title id="languageboy-title">LanguageBoy</title>
+  <desc id="languageboy-desc">A blue Game Boy with a screen, D-pad and buttons.</desc>
+  <g stroke-linejoin="round" stroke-linecap="round">
+    <rect x="109" y="9" width="294" height="494" rx="42" fill="#ffffff" stroke="#084fa3" stroke-width="14"/>
+    <rect x="135" y="34" width="66" height="15" rx="7.5" fill="#084fa3"/>
+    <circle cx="219" cy="41.5" r="8" fill="#084fa3"/>
+    <rect x="135" y="57" width="228" height="198" rx="18" fill="#084fa3"/>
+    <rect x="148" y="70" width="202" height="172" rx="10" fill="#4d9df7"/>
+    <rect x="160" y="82" width="178" height="148" rx="3" fill="#ffffff" stroke="#084fa3" stroke-width="4"/>
+    <rect x="155" y="288" width="44" height="100" rx="8" fill="#084fa3"/>
+    <rect x="127" y="316" width="100" height="44" rx="8" fill="#084fa3"/>
+    <rect x="167" y="300" width="20" height="76" rx="4" fill="#4d9df7"/>
+    <rect x="139" y="328" width="76" height="20" rx="4" fill="#4d9df7"/>
+    <circle cx="283" cy="357" r="31" fill="#084fa3"/>
+    <circle cx="283" cy="357" r="17" fill="#4d9df7"/>
+    <circle cx="339" cy="306" r="31" fill="#084fa3"/>
+    <circle cx="339" cy="306" r="17" fill="#4d9df7"/>
+    <rect x="174" y="403" width="12" height="36" rx="6" fill="#084fa3" transform="rotate(35 180 421)"/>
+    <rect x="226" y="403" width="12" height="36" rx="6" fill="#084fa3" transform="rotate(35 232 421)"/>
+    <rect x="298" y="424" width="12" height="44" rx="6" fill="#084fa3" transform="rotate(35 304 446)"/>
+    <rect x="318" y="424" width="12" height="44" rx="6" fill="#084fa3" transform="rotate(35 324 446)"/>
+    <rect x="338" y="424" width="12" height="44" rx="6" fill="#084fa3" transform="rotate(35 344 446)"/>
+    <rect x="358" y="424" width="12" height="44" rx="6" fill="#084fa3" transform="rotate(35 364 446)"/>
   </g>
-  <g fill="#0d2137">
-    <circle cx="340" cy="185" r="22"/>
-    <circle cx="380" cy="220" r="22"/>
-    <circle cx="340" cy="255" r="22"/>
-    <circle cx="300" cy="220" r="22"/>
-  </g>
-  <g transform="translate(190,280)">
-    <rect x="0" y="0" width="132" height="52" rx="10" fill="#fff" stroke="#0d2137" stroke-width="6"/>
-    <polygon points="52,52 66,70 80,52" fill="#fff" stroke="#0d2137" stroke-width="6" stroke-linejoin="round"/>
-    <text x="66" y="36" text-anchor="middle" font-family="Arial,sans-serif" font-weight="bold" font-size="26" fill="#0277bd">文A</text>
-  </g>
-  <text x="256" y="480" text-anchor="middle" font-family="Arial Black,Arial,sans-serif" font-weight="900" font-size="62" fill="#fff" stroke="#0d2137" stroke-width="6" paint-order="stroke">LanguageBoy</text>
 </svg>

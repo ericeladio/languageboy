@@ -15,3 +15,5 @@ data/cores/*
 *.tgz
 dist/
 jsdoc/
+.vercel
+.env*

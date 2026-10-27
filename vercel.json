@@ -1,0 +1,27 @@
+{
+  "framework": null,
+  "installCommand": "npm ci --omit=optional --omit=dev",
+  "buildCommand": "echo 'static site, no build'",
+  "outputDirectory": ".",
+  "cleanUrls": false,
+  "trailingSlash": false,
+  "functions": {
+    "api/export-anki.js": {
+      "maxDuration": 300
+    }
+  },
+  "headers": [
+    {
+      "source": "/data/(emulator\\.min\\..*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
+      ]
+    },
+    {
+      "source": "/data/(.*).wasm",
+      "headers": [
+        { "key": "Content-Type", "value": "application/wasm" }
+      ]
+    }
+  ]
+}

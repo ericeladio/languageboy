@@ -6,6 +6,7 @@ class EJS_Frontend {
     constructor(ejs, element) {
         this.ejs = ejs;
         this.currentPopup = null;
+        this.dualScreenBeforeFullscreen = false;
         this.missingLang = [];
         this.textElem = null;
         this.setElements(element);
@@ -21,6 +22,20 @@ class EJS_Frontend {
         const [enter, exit] = this.elements.bottomBar.fullscreen;
         enter.style.display = fullscreen ? "none" : "";
         exit.style.display = fullscreen ? "" : "none";
+    }
+    isFullscreen() {
+        return (document.fullscreenElement ||
+            document.webkitFullscreenElement ||
+            document.mozFullScreenElement ||
+            document.msFullscreenElement) === this.elements.parent;
+    }
+    handleFullscreenChange(fullscreen) {
+        if (fullscreen) {
+            this.suspendDualScreen();
+        } else {
+            this.resumeDualScreen();
+        }
+        this.updateFullscreenButtons(fullscreen);
     }
     updateVolumeSliderState(volume) {
         const [volumeSlider] = this.elements.bottomBar.volumeSlider;
@@ -116,7 +131,7 @@ class EJS_Frontend {
         this.dualGamepadLayer.classList.add("ejs_dual_gamepad");
         this.dualPadTranslateButton = this.ejs.createElement("button");
         this.dualPadTranslateButton.classList.add("ejs_dual_pad_translate");
-        this.dualPadTranslateButton.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.87 15.07l-2.54-2.51.03-.03A17.52 17.52 0 0014.07 6H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c7.02 1.17 13.05 5.22 14.37 11.27l2.22-2.19zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/></svg>';
+        this.dualPadTranslateButton.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.77 1.63 1.72 3.19 2.84 4.65C5.9 14.4 3.77 15.85 1 16.5l.5 2c3.23-.71 5.83-2.44 7.86-4.76 1.02 1.13 2.16 2.13 3.42 2.98l1.09-1.65zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/></svg>';
         this.dualPadTranslateButton.title = this.localization("Translate");
         this.dualPadTranslateButton.addEventListener("click", () => {
             this.setDualView("translate");
@@ -126,18 +141,18 @@ class EJS_Frontend {
         this.dualPanel.appendChild(this.dualGamepadLayer);
         this.dualTranslateView = this.ejs.createElement("div");
         this.dualTranslateView.classList.add("ejs_dual_translate_view");
-        this.ankiCards = JSON.parse(localStorage.getItem("languageboy-anki") || "[]");
         const langRow = this.ejs.createElement("div");
         langRow.classList.add("ejs_dual_lang_row");
         this.dualLangOptions = [
-            { code: "en", ocr: "eng", name: "English" },
-            { code: "es", ocr: "spa", name: "Español" },
-            { code: "ja", ocr: "jpn", name: "日本語" },
-            { code: "it", ocr: "ita", name: "Italiano" }
+            { code: "en", name: "English" },
+            { code: "es", name: "Español" },
+            { code: "ja", name: "日本語" },
+            { code: "it", name: "Italiano" }
         ];
         const validCode = (code) => this.dualLangOptions.some(l => l.code === code) ? code : null;
         this.dualLangFrom = validCode(this.ejs.preGetSetting("dual-ocr-from")) || "en";
         this.dualLangTo = validCode(this.ejs.preGetSetting("dual-ocr-to")) || "es";
+        this.loadAnkiState();
         const makeLangSelect = (selected, onChange) => {
             const select = this.ejs.createElement("select");
             select.classList.add("ejs_dual_lang_select");
@@ -158,8 +173,20 @@ class EJS_Frontend {
                 this.ejs.saveSettings();
             }
         };
-        langRow.appendChild(makeLangSelect(this.dualLangFrom, (v) => { this.dualLangFrom = v; saveLangSettings(); this.analyzeScreenshot(); }));
-        langRow.appendChild(makeLangSelect(this.dualLangTo, (v) => { this.dualLangTo = v; saveLangSettings(); this.analyzeScreenshot(); }));
+        this.dualLangFromSelect = makeLangSelect(this.dualLangFrom, (v) => {
+            this.dualLangFrom = v;
+            saveLangSettings();
+            this.syncCollectionToPair();
+            this.analyzeScreenshot();
+        });
+        this.dualLangToSelect = makeLangSelect(this.dualLangTo, (v) => {
+            this.dualLangTo = v;
+            saveLangSettings();
+            this.syncCollectionToPair();
+            this.analyzeScreenshot();
+        });
+        langRow.appendChild(this.dualLangFromSelect);
+        langRow.appendChild(this.dualLangToSelect);
         const backButton = this.ejs.createElement("button");
         backButton.classList.add("ejs_dual_back");
         backButton.title = this.localization("Back");
@@ -169,14 +196,14 @@ class EJS_Frontend {
         const retranslateButton = this.ejs.createElement("button");
         retranslateButton.classList.add("ejs_dual_retranslate");
         retranslateButton.title = this.localization("Translate");
-        retranslateButton.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.87 15.07l-2.54-2.51.03-.03A17.52 17.52 0 0014.07 6H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c7.02 1.17 13.05 5.22 14.37 11.27l2.22-2.19zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/></svg>';
+        retranslateButton.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.77 1.63 1.72 3.19 2.84 4.65C5.9 14.4 3.77 15.85 1 16.5l.5 2c3.23-.71 5.83-2.44 7.86-4.76 1.02 1.13 2.16 2.13 3.42 2.98l1.09-1.65zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/></svg>';
         retranslateButton.addEventListener("click", () => this.analyzeScreenshot());
         langRow.appendChild(retranslateButton);
         this.dualSaveCardButton = this.ejs.createElement("button");
         this.dualSaveCardButton.classList.add("ejs_dual_save_card");
-        this.dualSaveCardButton.title = this.localization("Save card");
+        this.dualSaveCardButton.title = this.localization("Save word");
         this.dualSaveCardButton.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>';
-        this.dualSaveCardButton.addEventListener("click", () => this.saveAnkiCard());
+        this.dualSaveCardButton.addEventListener("click", () => this.openSaveWordPopup());
         langRow.appendChild(this.dualSaveCardButton);
         this.dualTranslateView.appendChild(langRow);
         this.dualResult = this.ejs.createElement("div");
@@ -196,8 +223,23 @@ class EJS_Frontend {
         this.dualFrame.classList.add("ejs_dual_frame");
         this.game.appendChild(this.dualFrame);
         this.game.appendChild(this.dualPanel);
+        this.dsTranslateButton = this.ejs.createElement("button");
+        this.dsTranslateButton.classList.add("ejs_dual_pad_translate");
+        this.dsTranslateButton.classList.add("ejs_ds_translate");
+        this.dsTranslateButton.innerHTML = this.dualPadTranslateButton.innerHTML;
+        this.dsTranslateButton.title = this.localization("Translate");
+        this.dsTranslateButton.addEventListener("click", () => {
+            this.setDualView("translate");
+            this.analyzeScreenshot();
+        });
+        this.game.appendChild(this.dsTranslateButton);
         this.handleResize();
-        if (this.ejs.preGetSetting("dual-screen") === "enabled") this.setDualScreen(true);
+        const dualScreenSetting = this.ejs.preGetSetting("dual-screen");
+        if (dualScreenSetting === "enabled" || (this.isDualNDS() && dualScreenSetting !== "disabled")) {
+            this.setDualScreen(true);
+            if (this.isFullscreen()) this.suspendDualScreen();
+        }
+        this.preloadOCR();
     }
     setDualView(view) {
         this.elements.parent.classList.toggle("ejs_translate_view", view === "translate");
@@ -212,145 +254,700 @@ class EJS_Frontend {
         this.dualResultTranslation.textContent = translation || "";
         this.dualResultTranslation.style.display = translation ? "" : "none";
     }
-    saveAnkiCard() {
-        const en = (this.lastOcrText || "").trim();
-        const es = (this.lastTranslation || "").trim();
-        if (!en || !es || en === "NO TEXT FOUND" || es === "TRANSLATION FAILED") {
+    ankiStorageKey() {
+        return "languageboy-anki-v2";
+    }
+    loadAnkiState() {
+        try {
+            localStorage.removeItem("languageboy-anki");
+        } catch (e) {}
+        let state = null;
+        try {
+            state = JSON.parse(localStorage.getItem(this.ankiStorageKey()) || "null");
+        } catch (e) {
+            state = null;
+        }
+        if (!state || state.version !== 2 || !Array.isArray(state.collections)) {
+            state = { version: 2, activeCollectionId: null, collections: [] };
+        }
+        if (!state.lastCollectionByPair || typeof state.lastCollectionByPair !== "object") {
+            state.lastCollectionByPair = {};
+        }
+        this.ankiState = state;
+        this.ankiCollections = state.collections;
+        this.lastCollectionByPair = state.lastCollectionByPair;
+        this.activeCollectionId = state.activeCollectionId && state.collections.some(c => c.id === state.activeCollectionId) ? state.activeCollectionId : null;
+        const active = this.getActiveCollection();
+        if (active) {
+            this.dualLangFrom = active.fromLang;
+            this.dualLangTo = active.toLang;
+        }
+    }
+    saveAnkiState() {
+        this.ankiState.version = 2;
+        this.ankiState.collections = this.ankiCollections;
+        this.ankiState.activeCollectionId = this.activeCollectionId;
+        this.ankiState.lastCollectionByPair = this.lastCollectionByPair;
+        try {
+            localStorage.setItem(this.ankiStorageKey(), JSON.stringify(this.ankiState));
+        } catch (e) {}
+    }
+    getActiveCollection() {
+        if (!this.ankiCollections) return null;
+        return this.ankiCollections.find(c => c.id === this.activeCollectionId) || null;
+    }
+    findCollectionByPair(fromLang, toLang) {
+        return (this.ankiCollections || []).find(c => c.fromLang === fromLang && c.toLang === toLang) || null;
+    }
+    languageName(code) {
+        const lang = (this.dualLangOptions || []).find(l => l.code === code);
+        return lang ? lang.name : String(code || "");
+    }
+    uniqueCollectionName(name, ignoreId) {
+        const base = (name || "").trim() || (this.languageName(this.dualLangFrom) + " → " + this.languageName(this.dualLangTo));
+        let candidate = base;
+        let i = 2;
+        while (this.ankiCollections.some(c => c.id !== ignoreId && c.name === candidate)) {
+            candidate = base + " " + i;
+            i += 1;
+        }
+        return candidate;
+    }
+    createCollection(name, fromLang, toLang) {
+        const collection = {
+            id: "col_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+            name: this.uniqueCollectionName(name),
+            fromLang: fromLang || this.dualLangFrom,
+            toLang: toLang || this.dualLangTo,
+            cards: []
+        };
+        this.ankiCollections.push(collection);
+        this.activeCollectionId = collection.id;
+        this.lastCollectionByPair[collection.fromLang + "-" + collection.toLang] = collection.id;
+        this.saveAnkiState();
+        return collection;
+    }
+    setActiveCollection(id, updateLanguages) {
+        const collection = this.ankiCollections.find(c => c.id === id);
+        if (!collection) return null;
+        this.activeCollectionId = id;
+        this.lastCollectionByPair[collection.fromLang + "-" + collection.toLang] = collection.id;
+        this.dualLangFrom = collection.fromLang;
+        this.dualLangTo = collection.toLang;
+        if (this.dualLangFromSelect) this.dualLangFromSelect.value = collection.fromLang;
+        if (this.dualLangToSelect) this.dualLangToSelect.value = collection.toLang;
+        if (typeof this.changeSettingOption === "function") {
+            this.changeSettingOption("dual-ocr-from", collection.fromLang);
+            this.changeSettingOption("dual-ocr-to", collection.toLang);
+            this.ejs.saveSettings();
+        }
+        this.saveAnkiState();
+        if (updateLanguages !== false) {
+            this.lastTranslation = "";
+            this.analyzeScreenshot();
+        }
+        return collection;
+    }
+    ensureActiveCollection() {
+        let collection = this.getActiveCollection();
+        if (collection && collection.fromLang === this.dualLangFrom && collection.toLang === this.dualLangTo) return collection;
+        collection = this.findCollectionByPair(this.dualLangFrom, this.dualLangTo);
+        if (!collection) {
+            collection = this.createCollection(this.languageName(this.dualLangFrom) + " → " + this.languageName(this.dualLangTo), this.dualLangFrom, this.dualLangTo);
+        }
+        this.activeCollectionId = collection.id;
+        this.lastCollectionByPair[collection.fromLang + "-" + collection.toLang] = collection.id;
+        this.saveAnkiState();
+        return collection;
+    }
+    syncCollectionToPair() {
+        const active = this.getActiveCollection();
+        if (active && active.fromLang === this.dualLangFrom && active.toLang === this.dualLangTo) return active;
+        const pairKey = this.dualLangFrom + "-" + this.dualLangTo;
+        const rememberedId = this.lastCollectionByPair[pairKey];
+        const match = this.ankiCollections.find(c => c.id === rememberedId && c.fromLang === this.dualLangFrom && c.toLang === this.dualLangTo) || this.findCollectionByPair(this.dualLangFrom, this.dualLangTo);
+        this.activeCollectionId = match ? match.id : null;
+        if (match) this.lastCollectionByPair[pairKey] = match.id;
+        this.saveAnkiState();
+        return match;
+    }
+    safeFileName(text) {
+        const base = String(text || "")
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^a-zA-Z0-9_-]+/g, "_")
+            .replace(/^_+|_+$/g, "")
+            .slice(0, 60);
+        return base || "collection";
+    }
+    promptCollectionName(title, defaultValue, callback) {
+        const body = this.createPopup(title, {
+            "Save": () => {
+                const name = input.value.trim();
+                if (!name) {
+                    input.focus();
+                    return;
+                }
+                this.closePopup();
+                callback(name);
+            },
+            "Cancel": () => this.closePopup()
+        });
+        const content = this.ejs.createElement("div");
+        content.classList.add("ejs_anki_body");
+        body.appendChild(content);
+        const input = this.ejs.createElement("input");
+        input.type = "text";
+        input.maxLength = 80;
+        input.value = defaultValue || "";
+        input.autocomplete = "off";
+        input.spellcheck = false;
+        input.classList.add("ejs_save_word_input");
+        content.appendChild(input);
+        input.focus();
+        input.select();
+    }
+    promptDeleteCollection(collection) {
+        const body = this.createPopup("Delete collection", {
+            "Delete": () => {
+                this.ankiCollections = this.ankiCollections.filter(c => c.id !== collection.id);
+                for (const key of Object.keys(this.lastCollectionByPair)) {
+                    if (this.lastCollectionByPair[key] === collection.id) delete this.lastCollectionByPair[key];
+                }
+                if (this.activeCollectionId === collection.id) this.activeCollectionId = null;
+                this.syncCollectionToPair();
+                this.saveAnkiState();
+                this.openAnkiExport();
+            },
+            "Cancel": () => this.openAnkiExport()
+        });
+        const content = this.ejs.createElement("div");
+        content.classList.add("ejs_anki_body");
+        body.appendChild(content);
+        const text = this.ejs.createElement("div");
+        text.classList.add("ejs_anki_delete_text");
+        text.innerText = this.localization("Delete collection") + ": " + collection.name;
+        content.appendChild(text);
+    }
+    confirmDeleteAnkiCard(collection, index) {
+        const card = collection.cards[index];
+        if (!card) return;
+        const body = this.createPopup("Delete card", {
+            "Delete": () => {
+                collection.cards.splice(index, 1);
+                this.saveAnkiState();
+                this.openAnkiExport();
+            },
+            "Cancel": () => this.openAnkiExport()
+        });
+        const content = this.ejs.createElement("div");
+        content.classList.add("ejs_anki_body");
+        body.appendChild(content);
+        const text = this.ejs.createElement("div");
+        text.classList.add("ejs_anki_delete_text");
+        text.innerText = (card.en || "") + " → " + (card.es || "");
+        content.appendChild(text);
+        const warning = this.ejs.createElement("div");
+        warning.classList.add("ejs_anki_delete_warning");
+        warning.innerText = this.localization("This cannot be undone");
+        content.appendChild(warning);
+    }
+    tokenizeExample(text) {
+        const segments = [];
+        const re = /\S+|\s+/g;
+        let match;
+        while ((match = re.exec(text)) !== null) {
+            const value = match[0];
+            if (/^\s+$/.test(value)) {
+                segments.push({ text: value, word: "" });
+            } else {
+                const word = value.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, "");
+                segments.push({ text: value, word: word });
+            }
+        }
+        return segments;
+    }
+    openSaveWordPopup() {
+        const example = (this.lastOcrText || "").trim();
+        if (!example || example === "NO TEXT FOUND") {
             this.displayMessage(this.localization("Nothing to save"));
             return;
         }
-        if (!this.ankiCards) this.ankiCards = [];
-        this.ankiCards.push({ en: en, es: es, ts: Date.now() });
-        localStorage.setItem("languageboy-anki", JSON.stringify(this.ankiCards));
-        this.displayMessage(this.localization("Card saved") + " (" + this.ankiCards.length + ")");
+        const collection = this.ensureActiveCollection();
+
+        const currentExampleTranslation = (this.lastTranslation || "").trim();
+        const initialExampleTranslation = currentExampleTranslation && currentExampleTranslation !== "TRANSLATION FAILED" ? currentExampleTranslation : "";
+        const makeInput = (maxLength) => {
+            const input = this.ejs.createElement("input");
+            input.type = "text";
+            input.maxLength = maxLength;
+            input.autocomplete = "off";
+            input.spellcheck = false;
+            input.classList.add("ejs_save_word_input");
+            return input;
+        };
+
+        let saving = false;
+        let translateRequest = 0;
+        let setStatus = () => {};
+        const wordInput = makeInput(200);
+        const wordTranslationInput = makeInput(500);
+        const exampleTranslationInput = makeInput(4000);
+        exampleTranslationInput.value = initialExampleTranslation;
+
+        const popup = this.createPopup("Save word", {
+            "Save": async () => {
+                if (saving) return;
+                saving = true;
+                try {
+                    await this.saveAnkiCard({
+                        word: wordInput.value,
+                        translation: wordTranslationInput.value,
+                        example: example,
+                        exampleTranslation: exampleTranslationInput.value,
+                        onError: setStatus,
+                        isActive: () => popup.isConnected
+                    });
+                } finally {
+                    saving = false;
+                }
+            },
+            "Cancel": () => this.closePopup()
+        });
+
+        const body = this.ejs.createElement("div");
+        body.classList.add("ejs_save_word_body");
+        popup.appendChild(body);
+
+        const collectionInfo = this.ejs.createElement("div");
+        collectionInfo.classList.add("ejs_save_word_collection");
+        collectionInfo.innerText = collection.name + " · " + this.languageName(collection.fromLang) + " → " + this.languageName(collection.toLang);
+        body.appendChild(collectionInfo);
+
+        const hint = this.ejs.createElement("div");
+        hint.classList.add("ejs_save_word_hint");
+        hint.innerText = this.localization("Tap or type the main word");
+
+        const exampleLabel = this.ejs.createElement("div");
+        exampleLabel.classList.add("ejs_save_word_label");
+        exampleLabel.innerText = this.localization("Example");
+
+        const exampleBlock = this.ejs.createElement("div");
+        exampleBlock.classList.add("ejs_save_word_example");
+
+        const status = this.ejs.createElement("div");
+        status.classList.add("ejs_save_word_status");
+        setStatus = (key) => {
+            status.innerText = key ? this.localization(key) : "";
+        };
+
+        const makeField = (label, input) => {
+            const field = this.ejs.createElement("label");
+            field.classList.add("ejs_save_word_field");
+            const text = this.ejs.createElement("span");
+            text.classList.add("ejs_save_word_label");
+            text.innerText = this.localization(label);
+            field.appendChild(text);
+            field.appendChild(input);
+            return field;
+        };
+
+        wordInput.addEventListener("input", () => {
+            translateRequest += 1;
+            wordTranslationInput.value = "";
+            wordTranslationInput.placeholder = "";
+            setStatus("");
+            for (const token of exampleBlock.querySelectorAll(".ejs_save_word_token.selected")) {
+                token.classList.remove("selected");
+                token.setAttribute("aria-pressed", "false");
+            }
+        });
+
+        const translateWord = async () => {
+            const word = wordInput.value.trim();
+            const request = ++translateRequest;
+            wordTranslationInput.value = "";
+            wordTranslationInput.placeholder = "";
+            if (!word) {
+                setStatus("Select or type a word");
+                return;
+            }
+            wordTranslationInput.placeholder = this.localization("Translating");
+            setStatus("");
+            try {
+                const translated = await this.translateText(word, this.dualLangFrom, this.dualLangTo);
+                if (request !== translateRequest) return;
+                wordTranslationInput.value = translated;
+            } catch (e) {
+                if (request !== translateRequest) return;
+                if (this.ejs.debug) console.log("word translate error:", e);
+                setStatus("Translation failed");
+            } finally {
+                if (request === translateRequest) wordTranslationInput.placeholder = "";
+            }
+        };
+
+        const tokenEntries = [];
+        const selectToken = (entry, translate) => {
+            for (const item of tokenEntries) {
+                item.button.classList.toggle("selected", item === entry);
+                item.button.setAttribute("aria-pressed", item === entry ? "true" : "false");
+            }
+            wordInput.value = entry.word;
+            setStatus("");
+            if (translate) translateWord();
+        };
+
+        for (const segment of this.tokenizeExample(example)) {
+            if (!segment.word) {
+                exampleBlock.appendChild(document.createTextNode(segment.text));
+                continue;
+            }
+            const token = this.ejs.createElement("button");
+            token.type = "button";
+            token.classList.add("ejs_save_word_token");
+            token.setAttribute("aria-pressed", "false");
+            token.innerText = segment.text;
+            const entry = { button: token, word: segment.word };
+            token.addEventListener("click", () => selectToken(entry, true));
+            tokenEntries.push(entry);
+            exampleBlock.appendChild(token);
+        }
+
+        body.appendChild(hint);
+        body.appendChild(exampleLabel);
+        body.appendChild(exampleBlock);
+        body.appendChild(makeField("Word to learn", wordInput));
+        body.appendChild(makeField("Word translation", wordTranslationInput));
+        body.appendChild(makeField("Example translation", exampleTranslationInput));
+        body.appendChild(status);
+
+        if (tokenEntries.length === 1) {
+            selectToken(tokenEntries[0], false);
+            if (initialExampleTranslation) wordTranslationInput.value = initialExampleTranslation;
+            if (!wordTranslationInput.value) translateWord();
+        }
+    }
+    async saveAnkiCard(card) {
+        const word = (card.word || "").trim();
+        const example = (card.example || "").trim();
+        const fail = (key) => {
+            if (typeof card.onError === "function") card.onError(key);
+            else this.displayMessage(this.localization(key));
+        };
+        const stillOpen = () => typeof card.isActive !== "function" || card.isActive();
+
+        if (!word) {
+            fail("Select or type a word");
+            return;
+        }
+        if (!example) {
+            fail("Nothing to save");
+            return;
+        }
+
+        const collection = this.ensureActiveCollection();
+        const fromLang = collection.fromLang;
+        const toLang = collection.toLang;
+        let translation = (card.translation || "").trim();
+        let exampleTranslation = (card.exampleTranslation || "").trim();
+
+        if (!translation) {
+            try {
+                translation = (await this.translateText(word, fromLang, toLang)).trim();
+            } catch (e) {
+                if (this.ejs.debug) console.log("word translate error:", e);
+                if (stillOpen()) fail("Translation failed");
+                return;
+            }
+        }
+        if (!stillOpen()) return;
+        if (!translation) {
+            fail("Translation failed");
+            return;
+        }
+
+        if (!exampleTranslation) {
+            try {
+                exampleTranslation = (await this.translateText(example, fromLang, toLang)).trim();
+            } catch (e) {
+                if (this.ejs.debug) console.log("example translate error:", e);
+                if (stillOpen()) fail("Translation failed");
+                return;
+            }
+        }
+        if (!stillOpen()) return;
+        if (!exampleTranslation) {
+            fail("Translation failed");
+            return;
+        }
+
+        const duplicate = collection.cards.some((saved) => {
+            const savedExample = (saved.example || saved.en || "").trim();
+            return (saved.en || "").trim().toLowerCase() === word.toLowerCase() && savedExample === example;
+        });
+        if (duplicate) {
+            fail("Card already saved");
+            return;
+        }
+
+        collection.cards.push({
+            en: word,
+            es: translation,
+            example: example,
+            exampleTranslation: exampleTranslation,
+            fromLang: fromLang,
+            toLang: toLang,
+            ts: Date.now()
+        });
+        this.saveAnkiState();
+        this.closePopup();
+        this.displayMessage(this.localization("Card saved") + " (" + collection.cards.length + ")");
     }
     openAnkiExport() {
-        if (!this.ankiCards) this.ankiCards = [];
+        const collection = this.ensureActiveCollection();
         const popup = this.createPopup("Export Anki", {
             "Generate": () => this.exportAnkiCards(),
-            "Clear All": () => {
-                this.ankiCards = [];
-                localStorage.setItem("languageboy-anki", "[]");
-                this.closePopup();
-            },
             "Close": () => this.closePopup()
         });
-        if (this.ankiCards.length === 0) {
+
+        const body = this.ejs.createElement("div");
+        body.classList.add("ejs_anki_body");
+        popup.appendChild(body);
+
+        const collectionRow = this.ejs.createElement("div");
+        collectionRow.classList.add("ejs_anki_collection_row");
+
+        const collectionLabel = this.ejs.createElement("span");
+        collectionLabel.classList.add("ejs_anki_collection_label");
+        collectionLabel.innerText = this.localization("Collection");
+        collectionRow.appendChild(collectionLabel);
+
+        const collectionSelect = this.ejs.createElement("select");
+        collectionSelect.classList.add("ejs_anki_collection_select");
+        collectionSelect.setAttribute("aria-label", this.localization("Collection"));
+        this.ankiCollections.forEach((item) => {
+            const option = this.ejs.createElement("option");
+            option.value = item.id;
+            option.textContent = item.name + " (" + item.cards.length + ")";
+            if (item.id === collection.id) option.selected = true;
+            collectionSelect.appendChild(option);
+        });
+        collectionSelect.addEventListener("change", () => {
+            this.setActiveCollection(collectionSelect.value, false);
+            this.openAnkiExport();
+        });
+        collectionRow.appendChild(collectionSelect);
+
+        const makeCollectionButton = (label, handler) => {
+            const button = this.ejs.createElement("button");
+            button.classList.add("ejs_anki_collection_button");
+            button.innerText = this.localization(label);
+            button.addEventListener("click", handler);
+            return button;
+        };
+        collectionRow.appendChild(makeCollectionButton("New", () => {
+            this.promptCollectionName("New collection", this.languageName(this.dualLangFrom) + " → " + this.languageName(this.dualLangTo), (name) => {
+                this.createCollection(name, this.dualLangFrom, this.dualLangTo);
+                this.openAnkiExport();
+            });
+        }));
+        collectionRow.appendChild(makeCollectionButton("Rename", () => {
+            this.promptCollectionName("Rename collection", collection.name, (name) => {
+                collection.name = this.uniqueCollectionName(name, collection.id);
+                this.saveAnkiState();
+                this.openAnkiExport();
+            });
+        }));
+        collectionRow.appendChild(makeCollectionButton("Delete", () => {
+            this.promptDeleteCollection(collection);
+        }));
+        body.appendChild(collectionRow);
+
+        const languageInfo = this.ejs.createElement("div");
+        languageInfo.classList.add("ejs_anki_collection_info");
+        languageInfo.innerText = this.languageName(collection.fromLang) + " → " + this.languageName(collection.toLang);
+        body.appendChild(languageInfo);
+
+        if (collection.cards.length === 0) {
             const empty = this.ejs.createElement("div");
             empty.classList.add("ejs_anki_empty");
             empty.innerText = this.localization("No saved cards yet");
-            popup.appendChild(empty);
+            body.appendChild(empty);
             return;
         }
+
         const list = this.ejs.createElement("div");
         list.classList.add("ejs_anki_list");
-        this.ankiCards.forEach((card, i) => {
+        collection.cards.forEach((card, i) => {
             const item = this.ejs.createElement("div");
             item.classList.add("ejs_anki_item");
             const texts = this.ejs.createElement("div");
             texts.classList.add("ejs_anki_texts");
-            const en = this.ejs.createElement("div");
-            en.classList.add("ejs_anki_item_en");
-            en.innerText = card.en;
-            const es = this.ejs.createElement("div");
-            es.classList.add("ejs_anki_item_es");
-            es.innerText = card.es;
-            texts.appendChild(en);
-            texts.appendChild(es);
+            const source = this.ejs.createElement("div");
+            source.classList.add("ejs_anki_item_en");
+            source.innerText = card.en;
+            const target = this.ejs.createElement("div");
+            target.classList.add("ejs_anki_item_es");
+            target.innerText = card.es;
+            const example = this.ejs.createElement("div");
+            example.classList.add("ejs_anki_item_example");
+            example.innerText = card.example || card.en;
+            texts.appendChild(source);
+            texts.appendChild(target);
+            texts.appendChild(example);
+            if (card.exampleTranslation) {
+                const exampleTranslation = this.ejs.createElement("div");
+                exampleTranslation.classList.add("ejs_anki_item_example_translation");
+                exampleTranslation.innerText = card.exampleTranslation;
+                texts.appendChild(exampleTranslation);
+            }
             const remove = this.ejs.createElement("button");
             remove.classList.add("ejs_anki_remove");
             remove.innerText = "✕";
             remove.addEventListener("click", () => {
-                this.ankiCards.splice(i, 1);
-                localStorage.setItem("languageboy-anki", JSON.stringify(this.ankiCards));
-                this.closePopup();
-                this.openAnkiExport();
+                this.confirmDeleteAnkiCard(collection, i);
             });
             item.appendChild(texts);
             item.appendChild(remove);
             list.appendChild(item);
         });
-        popup.appendChild(list);
+        body.appendChild(list);
+
         const counter = this.ejs.createElement("div");
         counter.classList.add("ejs_anki_counter");
-        counter.innerText = this.ankiCards.length + " cards";
-        popup.appendChild(counter);
-    }
-    async generateCardAudio(text, voice) {
-        const base = "https://api.soundoftext.com/sounds";
-        const r = await fetch(base, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ engine: "Google", data: { text: text, voice: voice || "en-US" } })
-        });
-        if (!r.ok) throw new Error("soundoftext post failed");
-        const j = await r.json();
-        if (!j.id) throw new Error("no sound id");
-        await new Promise(res => setTimeout(res, 2000));
-        const status = await fetch(base + "/" + j.id);
-        const sj = await status.json();
-        if (!sj.location) throw new Error("no audio location");
-        const audioRes = await fetch(sj.location);
-        return await audioRes.blob();
+        counter.innerText = collection.cards.length + " " + this.localization("cards");
+        body.appendChild(counter);
     }
     async exportAnkiCards() {
-        const cards = this.ankiCards || [];
-        if (cards.length === 0) return;
-        const rows = [];
-        let audioOk = true;
-        for (let i = 0; i < cards.length; i++) {
-            this.displayMessage(this.localization("Generating audio") + " " + (i + 1) + "/" + cards.length);
-            let audioField = "";
-            try {
-                const blob = await this.generateCardAudio(cards[i].en, "en-US");
-                const safeName = cards[i].en.replace(/[^a-zA-Z0-9 ]/g, "").trim().replace(/\s+/g, "_") + "_" + i + ".mp3";
-                const a = this.ejs.createElement("a");
-                a.href = URL.createObjectURL(blob);
-                a.download = safeName;
-                a.click();
-                await new Promise(res => setTimeout(res, 500));
-                audioField = "[sound:" + safeName + "]";
-            } catch (e) {
-                audioOk = false;
-                if (this.ejs.debug) console.log("audio error:", e);
-            }
-            rows.push([cards[i].en, cards[i].es, cards[i].en, audioField]);
+        const collection = this.getActiveCollection();
+        const cards = collection ? collection.cards : [];
+        if (cards.length === 0) {
+            this.displayMessage(this.localization("No saved cards yet"));
+            return;
         }
-        const csvRows = [["English", "Spanish", "Example", "Audio"]].concat(rows);
-        const csv = csvRows.map(r => r.map(c => '"' + String(c).replace(/"/g, '""') + '"').join(";")).join("\n");
-        const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
-        const url = URL.createObjectURL(blob);
-        const a = this.ejs.createElement("a");
-        a.href = url;
-        a.download = "anki_cards.csv";
-        a.click();
-        URL.revokeObjectURL(url);
         this.closePopup();
-        this.displayMessage(audioOk ? this.localization("Exported") : this.localization("Exported without audio"));
-    }
-    ensureTesseract() {
-        if (window.Tesseract) return Promise.resolve(window.Tesseract);
-        if (this.tesseractLoading) return this.tesseractLoading;
-        this.tesseractLoading = new Promise((resolve, reject) => {
-            const script = this.ejs.createElement("script");
-            script.src = "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
-            script.onload = () => resolve(window.Tesseract);
-            script.onerror = () => {
-                this.tesseractLoading = null;
-                reject(new Error("OCR library failed to load"));
-            };
-            document.head.appendChild(script);
-        });
-        return this.tesseractLoading;
-    }
-    async ocrRecognize(blob, ocrLang) {
-        const Tesseract = await this.ensureTesseract();
-        if (!this.ocrWorkers) this.ocrWorkers = {};
-        if (!this.ocrWorkers[ocrLang]) {
-            this.ocrWorkers[ocrLang] = await Tesseract.createWorker(ocrLang, 1);
+        this.displayMessage(this.localization("Generating audio"), 300000);
+        try {
+            const response = await fetch("/api/export-anki", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    fromLang: collection.fromLang,
+                    toLang: collection.toLang,
+                    collectionName: collection.name,
+                    cards: cards.map((card) => ({
+                        en: card.en,
+                        es: card.es,
+                        example: card.example || card.en,
+                        exampleTranslation: card.exampleTranslation || ""
+                    }))
+                })
+            });
+            if (!response.ok) {
+                let message = "";
+                try {
+                    const data = await response.json();
+                    if (data && data.error) message = data.error;
+                } catch (e) {}
+                throw new Error(message || ("HTTP " + response.status));
+            }
+            const audioFailures = response.headers.get("X-Audio-Failures");
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            const date = new Date().toISOString().slice(0, 10);
+            const a = this.ejs.createElement("a");
+            a.href = url;
+            a.download = "languageboy_" + this.safeFileName(collection.name) + "_" + date + ".zip";
+            a.click();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+            this.displayMessage(audioFailures && audioFailures !== "0" ? this.localization("Exported without audio") : this.localization("Exported"));
+        } catch (e) {
+            if (this.ejs.debug) console.log("export error:", e);
+            this.displayMessage(this.localization("Export failed"));
         }
-        const result = await this.ocrWorkers[ocrLang].recognize(blob);
-        return (result.data.text || "").trim();
+    }
+    ensureRunOnWebOCR() {
+        if (this.ocrModule) return Promise.resolve(this.ocrModule);
+        if (this.ocrLoading) return this.ocrLoading;
+        this.ocrLoading = import("https://esm.sh/runonweb@0.1.0/ocr?target=es2022")
+            .then((module) => {
+                this.ocrModule = module;
+                return module;
+            })
+            .catch(() => {
+                this.ocrLoading = null;
+                throw new Error("OCR library failed to load");
+            });
+        return this.ocrLoading;
+    }
+    loadOCR() {
+        if (this.ocrReady) return Promise.resolve();
+        if (this.ocrLoadPromise) return this.ocrLoadPromise;
+        const promise = (async () => {
+            const { OCR } = await this.ensureRunOnWebOCR();
+            if (this.ocrReady) return;
+            if (!this.ocrEngine) {
+                this.ocrEngine = new OCR({
+                    size: "small",
+                    onProgress: (info) => this.handleOCRProgress(info)
+                });
+            }
+            await this.ocrEngine.load();
+            this.ocrReady = true;
+        })();
+        this.ocrLoadPromise = promise.finally(() => {
+            this.ocrLoadPromise = null;
+            if (this.ocrReady) return;
+            const engine = this.ocrEngine;
+            this.ocrEngine = null;
+            if (engine && typeof engine.dispose === "function") {
+                try {
+                    engine.dispose();
+                } catch (e) {}
+            }
+        });
+        return this.ocrLoadPromise;
+    }
+    preloadOCR() {
+        if (this.ocrPreloadStarted || this.ocrReady || this.ocrLoadPromise) return;
+        this.ocrPreloadStarted = true;
+        const start = () => {
+            this.loadOCR().catch((e) => {
+                if (this.ejs.debug) console.log("OCR preload error:", e);
+            });
+        };
+        if (typeof window.requestIdleCallback === "function") {
+            window.requestIdleCallback(start, { timeout: 3000 });
+        } else {
+            setTimeout(start, 1500);
+        }
+    }
+    handleOCRProgress(info) {
+        if (!this.dualAnalyzing || !info) return;
+        if (info.status === "progress" && typeof info.progress === "number") {
+            const percent = Math.round(info.progress);
+            this.setDualResult(percent >= 100 ? "INITIALIZING OCR…" : "LOADING OCR " + percent + "%");
+        } else if (info.status === "loading") {
+            this.setDualResult("LOADING OCR…");
+        }
+    }
+    async ocrRecognize(blob) {
+        await this.loadOCR();
+        try {
+            const { text } = await this.ocrEngine.read(blob);
+            return (text || "").trim();
+        } catch (e) {
+            this.ocrReady = false;
+            const engine = this.ocrEngine;
+            this.ocrEngine = null;
+            if (engine && typeof engine.dispose === "function") {
+                try {
+                    await engine.dispose();
+                } catch (err) {}
+            }
+            throw e;
+        }
     }
     async translateText(text, from, to) {
         if (from === to) return text;
@@ -391,28 +988,52 @@ class EJS_Frontend {
         if (!out || /^MYMEMORY WARNING/i.test(out)) throw new Error("Translation failed");
         return out;
     }
+    isDualNDS() {
+        return this.ejs.getCore(true) === "nds";
+    }
+    async cropDualScreenshot(blob) {
+        if (!this.isDualNDS() || !blob) return blob;
+        try {
+            const bitmap = await createImageBitmap(blob);
+            const width = bitmap.width;
+            const height = Math.floor(bitmap.height / 2);
+            const canvas = document.createElement("canvas");
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext("2d", { alpha: false });
+            ctx.drawImage(bitmap, 0, height, width, height, 0, 0, width, height);
+            bitmap.close();
+            return await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
+        } catch (e) {
+            return blob;
+        }
+    }
     analyzeScreenshot() {
         if (this.dualAnalyzing) {
             this.dualAnalyzingPending = true;
             return;
         }
         this.dualAnalyzing = true;
+        this.lastOcrText = "";
+        this.lastTranslation = "";
         this.setDualResult("ANALYZING…");
         const fromLang = this.dualLangOptions.find(l => l.code === this.dualLangFrom) || this.dualLangOptions[0];
         const toLang = this.dualLangOptions.find(l => l.code === this.dualLangTo) || this.dualLangOptions[0];
         this.ejs.screenshot(async (blob) => {
             try {
-                const text = await this.ocrRecognize(blob, fromLang.ocr);
+                blob = await this.cropDualScreenshot(blob);
+                const text = await this.ocrRecognize(blob);
                 if (!text) {
                     this.setDualResult("NO TEXT FOUND");
                     return;
                 }
+                this.lastOcrText = text;
                 this.setDualResult("TRANSLATING…");
                 const translated = await this.translateText(text, fromLang.code, toLang.code);
-                this.lastOcrText = text;
                 this.lastTranslation = translated;
                 this.setDualResult("", text, translated);
             } catch (e) {
+                this.lastTranslation = "";
                 this.setDualResult("TRANSLATION FAILED");
                 if (this.ejs.debug) console.log("translate error:", e);
             } finally {
@@ -425,10 +1046,19 @@ class EJS_Frontend {
         });
     }
     setDualScreen(enabled) {
-        this.dualScreenEnabled = !!enabled && this.ejs.getCore(true) !== "nds";
-        this.elements.parent.classList.toggle("ejs_dual_screen", this.dualScreenEnabled);
-        if (!this.dualScreenEnabled) {
-            this.setDualView("pad");
+        this.dualScreenBeforeFullscreen = false;
+        this.dualScreenEnabled = !!enabled && ["gba", "nds"].includes(this.ejs.getCore(true));
+        this.applyDualScreenLayout(this.dualScreenEnabled);
+        if (typeof this.changeSettingOption === "function") {
+            this.changeSettingOption("dual-screen", this.dualScreenEnabled ? "enabled" : "disabled");
+            this.ejs.saveSettings();
+        }
+    }
+    applyDualScreenLayout(enabled, resetView = true) {
+        this.elements.parent.classList.toggle("ejs_dual_screen", enabled);
+        this.elements.parent.classList.toggle("ejs_dual_screen_nds", enabled && this.isDualNDS());
+        if (!enabled) {
+            if (resetView) this.setDualView("pad");
             if (this.dualPanel) {
                 this.dualPanel.style.left = "";
                 this.dualPanel.style.top = "";
@@ -446,6 +1076,12 @@ class EJS_Frontend {
                 this.dualPadTranslateButton.style.top = "";
                 this.dualPadTranslateButton.style.right = "";
             }
+            if (this.dsTranslateButton) {
+                this.dsTranslateButton.style.left = "";
+                this.dsTranslateButton.style.top = "";
+                this.dsTranslateButton.style.right = "";
+                this.dsTranslateButton.style.bottom = "";
+            }
             if (this.virtualGamepad) {
                 this.virtualGamepad.style.left = "";
                 this.virtualGamepad.style.right = "";
@@ -455,13 +1091,24 @@ class EJS_Frontend {
         } else {
             this.syncDualScreenSize();
         }
-        if (typeof this.changeSettingOption === "function") {
-            this.changeSettingOption("dual-screen", this.dualScreenEnabled ? "enabled" : "disabled");
-            this.ejs.saveSettings();
+    }
+    suspendDualScreen() {
+        if (!this.dualScreenEnabled) return;
+        this.dualScreenBeforeFullscreen = true;
+        this.dualScreenEnabled = false;
+        this.applyDualScreenLayout(false, false);
+    }
+    resumeDualScreen() {
+        if (!this.dualScreenBeforeFullscreen) return;
+        this.dualScreenBeforeFullscreen = false;
+        this.dualScreenEnabled = true;
+        this.applyDualScreenLayout(true, false);
+        if (typeof requestAnimationFrame === "function") {
+            requestAnimationFrame(() => this.syncDualScreenSize());
         }
     }
     syncDualScreenSize() {
-        if (!this.dualScreenEnabled || !this.dualPanel || !this.canvas) return;
+        if (!this.dualScreenEnabled || !this.elements.parent.classList.contains("ejs_dual_screen") || !this.dualPanel || !this.canvas) return;
         const cr = this.canvas.getBoundingClientRect();
         if (!cr.width || !cr.height) return;
         let aspect = 1.5;
@@ -482,6 +1129,29 @@ class EJS_Frontend {
         const gameTop = Math.round(cr.top - gr.top + (cr.height - gh) / 2);
         const panelWidth = Math.round(gw);
         const panelHeight = Math.round(gh);
+        if (this.isDualNDS()) {
+            const screenHeight = Math.floor(panelHeight / 2);
+            const screenTop = gameTop + panelHeight - screenHeight;
+            this.dualPanel.style.left = gameLeft + "px";
+            this.dualPanel.style.top = screenTop + "px";
+            this.dualPanel.style.width = panelWidth + "px";
+            this.dualPanel.style.height = screenHeight + "px";
+            if (this.dsTranslateButton) {
+                const bw = this.dsTranslateButton.offsetWidth || 45;
+                const bh = this.dsTranslateButton.offsetHeight || 28;
+                const sideSpace = gr.width - (gameLeft + panelWidth);
+                const outside = sideSpace >= bw + 16;
+                this.dsTranslateButton.style.left = (outside ?
+                    gameLeft + panelWidth + 16 :
+                    gameLeft + panelWidth - bw - 12) + "px";
+                this.dsTranslateButton.style.top = (outside ?
+                    screenTop + Math.round((screenHeight - bh) / 2) :
+                    screenTop + 12) + "px";
+                this.dsTranslateButton.style.right = "auto";
+                this.dsTranslateButton.style.bottom = "auto";
+            }
+            return;
+        }
         this.dualPanel.style.left = gameLeft + "px";
         this.dualPanel.style.top = (gameTop + panelHeight) + "px";
         this.dualPanel.style.width = panelWidth + "px";
@@ -502,14 +1172,12 @@ class EJS_Frontend {
             this.virtualGamepad.style.bottom = Math.round(Math.max(50, pr.bottom - panelRect.bottom)) + "px";
             if (this.dualPadTranslateButton) {
                 const startBtn = this.virtualGamepad.querySelector(".b_start");
-                const dpadMain = this.virtualGamepad.querySelector(".ejs_dpad_main");
-                if (startBtn && dpadMain) {
+                if (startBtn) {
                     const sr = startBtn.getBoundingClientRect();
-                    const dr = dpadMain.getBoundingClientRect();
                     const bw = this.dualPadTranslateButton.offsetWidth;
                     const bh = this.dualPadTranslateButton.offsetHeight;
                     this.dualPadTranslateButton.style.left = Math.round(sr.left + sr.width / 2 - panelRect.left - bw / 2) + "px";
-                    this.dualPadTranslateButton.style.top = Math.round(dr.top + dr.height / 2 - panelRect.top - bh / 2) + "px";
+                    this.dualPadTranslateButton.style.top = Math.round(sr.top - panelRect.top - bh - 10) + "px";
                     this.dualPadTranslateButton.style.right = "auto";
                     this.dualPadTranslateButton.style.bottom = "auto";
                 }
@@ -678,7 +1346,8 @@ class EJS_Frontend {
         //to fix a funny apple bug
         this.ejs.addEventListener(window, "webkitfullscreenchange mozfullscreenchange fullscreenchange MSFullscreenChange", () => {
             setTimeout(() => {
-                this.handleResize.bind(this);
+                this.handleFullscreenChange(this.isFullscreen());
+                this.handleResize();
                 if (this.ejs.config.noAutoFocus !== true) this.elements.parent.focus();
             }, 0);
         });
@@ -856,14 +1525,6 @@ class EJS_Frontend {
         this.elements.contextmenu.classList.add("ejs_context_menu");
         this.ejs.addEventListener(this.game, "contextmenu", (e) => {
             e.preventDefault();
-            if ((this.ejs.config.buttonOpts && this.ejs.config.buttonOpts.rightClick === false) || !this.ejs.started || this.ejs.lightgunActive) return;
-            const parentRect = this.elements.parent.getBoundingClientRect();
-            this.elements.contextmenu.style.display = "block";
-            const rect = this.elements.contextmenu.getBoundingClientRect();
-            const up = e.offsetY + rect.height > parentRect.height - 25;
-            const left = e.offsetX + rect.width > parentRect.width - 5;
-            this.elements.contextmenu.style.left = (e.offsetX - (left ? rect.width : 0)) + "px";
-            this.elements.contextmenu.style.top = (e.offsetY - (up ? rect.height : 0)) + "px";
         })
         const hideMenu = () => {
             this.elements.contextmenu.style.display = "none";
@@ -1476,6 +2137,7 @@ class EJS_Frontend {
         });
 
         const dualScreenButton = addButton(this.ejs.config.buttonOpts.dualScreen, () => {
+            this.dualScreenBeforeFullscreen = false;
             this.setDualScreen(!this.dualScreenEnabled);
         });
 
@@ -1744,7 +2406,7 @@ class EJS_Frontend {
             if (this.ejs.config.buttonOpts.cheat.visible === false) cheatMenu.style.display = "none";
             if (this.ejs.config.buttonOpts.cacheManager.visible === false) cache.style.display = "none";
             if (this.ejs.config.buttonOpts.netplay.visible === false) netplay.style.display = "none";
-            if (this.ejs.config.buttonOpts.dualScreen.visible === false || this.ejs.getCore(true) === "nds") dualScreenButton.style.display = "none";
+            if (this.ejs.config.buttonOpts.dualScreen.visible === false) dualScreenButton.style.display = "none";
             if (this.ejs.config.buttonOpts.diskButton.visible === false) diskButton[0].style.display = "none";
             if (this.ejs.config.buttonOpts.volumeSlider.visible === false) volumeSlider.style.display = "none";
             if (this.ejs.config.buttonOpts.exitEmulation.visible === false) exitEmulation.style.display = "none";

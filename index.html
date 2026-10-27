@@ -3,401 +3,333 @@
     <head>
         <meta charset="utf-8">
         <title>LanguageBoy</title>
-        <link rel="icon" href="docs/favicon.ico" sizes="16x16 32x32 48x48 64x64" type="image/vnd.microsoft.icon">
+        <link rel="icon" href="docs/Logo-light.svg" type="image/svg+xml">
+        <link rel="apple-touch-icon" href="docs/Logo-light.png">
         <meta name="viewport" content="width = device-width, initial-scale = 1">
         <style>
-             body, html {
-                height: 100%;
-                background-color: black;
-                color: white;
+            :root {
+                --neon: #4da9ff;
+                --neon-strong: #1aafff;
+                --ink: #eaf6ff;
+                --muted: #9fc7ea;
+            }
+
+            * {
+                box-sizing: border-box;
+            }
+
+            html {
+                min-height: 100%;
+                background-color: #05070a;
             }
 
             body {
+                min-height: 100vh;
                 margin: 0;
-                overflow: hidden;
-            }
-
-            body, #box, #top {
+                padding: clamp(24px, 6vh, 64px) 20px;
                 display: flex;
+                flex-direction: column;
                 align-items: center;
                 justify-content: center;
-                flex-direction: column;
-            }
-
-            #box {
-                color: #aaa;
-                height: 20em;
-                width: 30em;
-                max-width: 80%;
-                max-height: 80%;
-                background-color: #333;
-                border-radius: 0.4em;
-                border: 2px solid #555;
-                position: relative;
-                flex-direction: column;
-                transition-duration: 0.2s;
-                overflow: hidden;
-                font-family: monospace;
-                font-weight: bold;
-                font-size: 20px;
-                margin: 5px;
+                gap: clamp(20px, 3.5vh, 30px);
+                overflow-x: hidden;
+                background:
+                    radial-gradient(55% 45% at 50% 0%, rgba(26, 175, 255, 0.14), transparent 72%),
+                    #05070a;
+                color: var(--muted);
+                font-family: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
                 text-align: center;
-                padding: 10px;
-            }
-
-            #box:hover, #box[drag] {
-                border-color: #1AAFFF;
-                color: #ddd
-            }
-
-            #advanced {
-                color: #aaa;
-                text-align: left;
-                width: 30em;
-                max-width: 80%;
-                background-color: #333;
-                border-radius: 0.4em;
-                border: 2px solid #555;
-                position: relative;
-                flex-direction: column;
-                transition-duration: 0.2s;
-                overflow: hidden;
-                font-family: monospace;
-                font-weight: bold;
-                font-size: 20px;
-                margin: 5px;
-                padding: 10px;
-            }
-
-            #advancedOptionsBox {
-                margin-top: 10px;
-                font-size: 14px;
-                margin-left: 20px;
-            }
-
-            .advancedOptionsBoxRow {
-                margin-top: 10px;
-            }
-
-            #input {
-                cursor: pointer;
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-                height: 100%;
-                opacity: 0;
-            }
-
-            #display {
-                width: 100%;
-                height: 100%
-            }
-
-            select, button {
-                padding: 0.6em 0.4em;
-                margin: 0.5em;
-                width: 15em;
-                max-width: 100%;
-                font-family: monospace;
-                font-weight: bold;
-                font-size: 16px;
-                background-color: #444;
-                color: #aaa;
-                border-radius: 0.4em;
-                border: 1px solid #555;
-                cursor: pointer;
-                transition-duration: 0.2s
-            }
-
-            select:hover, button:hover {
-                background-color: #666;
-                color: #ddd
-            }
-
-            .logo {
-                width: 130px;
-                height: 130px;
-                filter: drop-shadow(0 0 8px white);
             }
 
             #top {
-                margin: 5px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 16px;
+            }
+
+            .logo {
+                width: 76px;
+                height: 76px;
+                flex: 0 0 auto;
+                filter: drop-shadow(0 0 10px rgba(26, 175, 255, 0.75));
+            }
+
+            .brand {
+                text-align: left;
+            }
+
+            h1 {
+                margin: 0;
+                font-size: clamp(1.8rem, 4.5vw, 2.6rem);
+                line-height: 1;
+                letter-spacing: 0.02em;
+                color: var(--neon);
+                text-shadow: 0 0 6px rgba(26, 175, 255, 0.85), 0 0 22px rgba(26, 175, 255, 0.45);
+            }
+
+            .tagline {
+                margin: 7px 0 0;
+                font-size: 0.72rem;
+                letter-spacing: 0.22em;
+                text-transform: uppercase;
+                color: #6fb2e8;
+            }
+
+            #box {
+                position: relative;
+                width: min(560px, 100%);
+                min-height: 250px;
+                padding: 34px 28px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 10px;
+                overflow: hidden;
+                border: 2px dashed rgba(77, 169, 255, 0.5);
+                border-radius: 20px;
+                background:
+                    radial-gradient(120% 100% at 50% 0%, rgba(26, 175, 255, 0.1), transparent 65%),
+                    rgba(255, 255, 255, 0.02);
+                color: var(--muted);
+                cursor: pointer;
+                transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+            }
+
+            #box:hover, #box[drag] {
+                border-color: var(--neon-strong);
+                border-style: solid;
+                transform: translateY(-2px);
+                box-shadow: 0 0 0 1px rgba(26, 175, 255, 0.35), 0 16px 50px rgba(26, 175, 255, 0.18);
+            }
+
+            .upload-icon {
+                width: 52px;
+                height: 52px;
+                margin-bottom: 4px;
+                color: var(--neon);
+                filter: drop-shadow(0 0 8px rgba(26, 175, 255, 0.6));
+                transition: transform 0.2s;
+            }
+
+            #box:hover .upload-icon {
+                transform: translateY(-3px);
+            }
+
+            .upload-icon svg {
+                width: 100%;
+                height: 100%;
+            }
+
+            .drop-title {
+                margin: 0;
+                font-size: 1.05rem;
+                font-weight: 700;
+                color: var(--ink);
+            }
+
+            .drop-hint {
+                margin: 0;
+                font-size: 0.82rem;
+                color: #91b9dd;
+            }
+
+            .formats {
+                display: flex;
+                gap: 8px;
+                margin-top: 8px;
+            }
+
+            .formats span {
+                padding: 3px 11px;
+                border: 1px solid rgba(77, 169, 255, 0.45);
+                border-radius: 999px;
+                background-color: rgba(26, 175, 255, 0.08);
+                color: #8fd0ff;
+                font-size: 0.68rem;
+                letter-spacing: 0.14em;
+            }
+
+            #intro {
+                max-width: 560px;
+                margin: 0;
+                font-size: 0.86rem;
+                line-height: 1.7;
+                color: var(--muted);
+            }
+
+            #intro strong {
+                color: #7fd0ff;
+                text-shadow: 0 0 8px rgba(26, 175, 255, 0.55);
+            }
+
+            #input {
+                position: absolute;
+                inset: 0;
+                width: 100%;
+                height: 100%;
+                opacity: 0;
+                cursor: pointer;
+            }
+
+            #display {
+                position: fixed;
+                inset: 0;
+                width: 100%;
+                height: 100%;
+                background-color: #000;
+            }
+
+            select, button {
+                padding: 0.6em 0.9em;
+                margin: 0.35em;
+                width: min(15em, 100%);
+                font-family: inherit;
+                font-weight: bold;
+                font-size: 0.9rem;
+                background-color: #0d1620;
+                color: #bfe3ff;
+                border-radius: 0.6em;
+                border: 1px solid rgba(77, 169, 255, 0.4);
+                cursor: pointer;
+                transition: background-color 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.2s;
+            }
+
+            select:hover, button:hover {
+                background-color: #122234;
+                border-color: var(--neon);
+                color: var(--ink);
+                box-shadow: 0 0 12px rgba(26, 175, 255, 0.35);
+            }
+
+            @media (max-width: 520px) {
+                #top {
+                    flex-direction: column;
+                    gap: 10px;
+                }
+
+                .brand {
+                    text-align: center;
+                }
+
+                .logo {
+                    width: 68px;
+                    height: 68px;
+                }
+
+                #box {
+                    min-height: 220px;
+                    padding: 28px 20px;
+                }
             }
         </style>
     </head>
 
     <body>
         <div id="top">
-            <h1>LanguageBoy</h1>
-            <img src="docs/Logo-light.svg" alt="Logo" class="logo">
-            <br>
+            <img src="docs/Logo-light.svg" alt="Logo de LanguageBoy" class="logo">
+            <div class="brand">
+                <h1>LanguageBoy</h1>
+                <p class="tagline">Traductor de GBA · NDS</p>
+            </div>
         </div>
         <div id="box">
-            <input type="file" id ="input" title="Upload" />
-            Drag ROM file or click here
+            <input type="file" id="input" title="Upload" accept=".gba,.nds,.zip" />
+            <div class="upload-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 16V4"></path>
+                    <path d="m7 9 5-5 5 5"></path>
+                    <path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"></path>
+                </svg>
+            </div>
+            <p class="drop-title">Arrastra aquí tu ROM</p>
+            <p class="drop-hint">o haz clic para elegir un archivo</p>
+            <div class="formats">
+                <span>GBA</span>
+                <span>NDS</span>
+            </div>
         </div>
-        <div id="advanced">
-            <div id="advancedToggleBox">
-                <input type="checkbox" id="advancedToggle" />
-                <label for="advancedToggle"> Show Advanced Options</label>
-            </div>
-            <div id="advancedOptionsBox">
-                <div class="advancedOptionsBoxRow">
-                    <input type="file" id ="inputAdvanced" title="BIOS" />
-                    <label for="inputAdvanced"> Upload BIOS file (if required)</label>
-                </div>
-                <div class="advancedOptionsBoxRow">
-                    <input type="checkbox" id="debugToggle" />
-                    <label for="debugToggle"> Enable Debug Mode</label>
-                </div>
-                <div id="advancedOptionsBoxThreads" class="advancedOptionsBoxRow">
-                    <input type="checkbox" id="threadsToggle" />
-                    <label for="threadsToggle"> Enable Threads</label>
-                </div>
-                <div id="advancedOptionsCache" class="advancedOptionsBoxRow">
-                    <input type="checkbox" id="cacheToggle" checked="checked" />
-                    <label for="cacheToggle"> Enable Cache</label>
-                </div>
-                <div class="advancedOptionsBoxRow">
-                    <span>Browser mode: </span>
-                    <input type="radio" id="browserModeAuto" name="browserMode" value="auto">
-                    <label for="browserModeAuto"> Auto </label>
-                    <input type="radio" id="browserModeDesktop" name="browserMode" value="desktop">
-                    <label for="browserModeDesktop"> Desktop </label>
-                    <input type="radio" id="browserModeMobile" name="browserMode" value="mobile">
-                    <label for="browserModeMobile"> Mobile </label>
-                </div>
-            </div>
+        <div id="intro">
+            Emulador para jugar y traducir juegos de <strong>GBA</strong> y <strong>DS</strong>.
+            Guarda tus palabras favoritas y expórtalas como tarjetas <strong>Anki</strong>.
         </div>
 
         <script>
-            let enableDebug = false;
+            const queryString = window.location.search;
+            const urlParams = new URLSearchParams(queryString);
+            let enableDebug = parseInt(urlParams.get("debug")) === 1 || urlParams.get("debug") === "true";
             let enableThreads = false;
             let browserMode;
 
-            const biosFileInput = document.getElementById("inputAdvanced");
-            
-            const advancedToggle = document.getElementById("advancedToggle");
-            const advanced = document.getElementById("advanced");
-            const advancedOptionsBox = document.getElementById("advancedOptionsBox");
-            advancedOptionsBox.style.display = "none";
-            advancedToggle.addEventListener("change", (event) => {
-                if (event.target.checked) {
-                    advancedOptionsBox.style.display = "block";
-                } else {
-                    advancedOptionsBox.style.display = "none";
-                }
-            });
-
-            const queryString = window.location.search;
-            const urlParams = new URLSearchParams(queryString);
-            const debugToggle = document.getElementById("debugToggle");
-            debugToggle.addEventListener("change", (event) => {
-                enableDebug = event.target.checked;
-                console.log(`Debug is ${enableDebug ? "enabled" : "disabled"}`);
-            });
-            const cacheToggle = document.getElementById("cacheToggle");
             window.EJS_cacheConfig = {
                 enabled: true,
-                cacheMaxSizeMB: 4096, // 4096 MB = 4 GB
-                cacheMaxAgeMins: 7200 // 7200 minutes = 5 days
+                cacheMaxSizeMB: 4096,
+                cacheMaxAgeMins: 7200
             };
-            cacheToggle.addEventListener("change", (event) => {
-                const cacheEnabled = event.target.checked;
-                console.log(`Cache is ${cacheEnabled ? "enabled" : "disabled"}`);
-                window.EJS_cacheConfig.enabled = cacheEnabled;
-            });
-            const threadsToggleAvailable = document.getElementById("advancedOptionsBoxThreads");
-            const threadsToggle = document.getElementById("threadsToggle");
-            threadsToggle.addEventListener("change", (event) => {
-                enableThreads = event.target.checked;
-                console.log(`Threads are ${enableThreads ? "enabled" : "disabled"}`);
-            });
-            if (parseInt(urlParams.get("debug")) === 1 || urlParams.get("debug") === "true") {
-                enableDebug = true;
-                debugToggle.checked = true;
-                console.log("Debug is enabled");
-            } else {
-                debugToggle.checked = false;
-                console.log("Debug is disabled");
+
+            if (window.SharedArrayBuffer && (parseInt(urlParams.get("threads")) === 1 || urlParams.get("threads") === "true")) {
+                enableThreads = true;
             }
 
-            if (window.SharedArrayBuffer) {
-                threadsToggleAvailable.style.display = "block";
-                if (parseInt(urlParams.get("threads")) === 1 || urlParams.get("threads") === "true") {
-                    enableThreads = true;
-                    threadsToggle.checked = true;
-                    console.log("Threads are enabled");
-                } else {
-                    threadsToggle.checked = false;
-                    console.log("Threads are disabled");
-                }
-            } else {
-                threadsToggleAvailable.style.display = "none";
-                console.warn("Threads are disabled as SharedArrayBuffer is not available. Threads requires two headers to be set when sending you html page. See https://stackoverflow.com/a/68630724");
+            const requestedBrowserMode = urlParams.get("browserMode");
+            if (requestedBrowserMode === "mobile" || requestedBrowserMode === "1") {
+                browserMode = "mobile";
+            } else if (requestedBrowserMode === "desktop" || requestedBrowserMode === "2") {
+                browserMode = "desktop";
             }
 
-            const browserModeAuto = document.getElementById("browserModeAuto");
-            browserModeAuto.addEventListener("change", (event) => {
-                if (event.target.checked) {
-                    browserMode = undefined;
-                    console.log("Browser mode set to auto");
-                }
-            });
-            const browserModeDesktop = document.getElementById("browserModeDesktop");
-            browserModeDesktop.addEventListener("change", (event) => {
-                if (event.target.checked) {
-                    browserMode = "desktop";
-                    console.log("Browser mode set to desktop");
-                }
-            });
-            const browserModeMobile = document.getElementById("browserModeMobile");
-            browserModeMobile.addEventListener("change", (event) => {
-                if (event.target.checked) {
-                    browserMode = "mobile";
-                    console.log("Browser mode set to mobile");
-                }
-            });
-            if (urlParams.get("browserMode")) {
-                browserMode = urlParams.get("browserMode");
-                switch (browserMode) {
-                    case 1:
-                    case "1":
-                    case "mobile":
-                        browserModeMobile.checked = true;
-                        break;
-                    case 2:
-                    case "2":
-                    case "desktop":
-                        browserModeDesktop.checked = true;
-                        break;
-                    default:
-                        browserModeAuto.checked = true;
-                        break;
-                }
-            } else {
-                browserModeAuto.checked = true;
-            }
+            const supportedExtensions = ["gba", "nds", "zip"];
 
             if (urlParams.get("rom")) {
                 console.log(`Loading ROM from URL: roms/${urlParams.get("rom")}`);
                 run(false, urlParams.get("rom"));
             }
 
+            function getCore(ext) {
+                ext = (ext || "").toLowerCase();
+                if (ext === "gba" || ext === "nds") return Promise.resolve(ext);
+                if (ext !== "zip") return Promise.resolve(null);
+
+                return new Promise(resolve => {
+                    const cores = {
+                        "Nintendo Game Boy Advance": "gba",
+                        "Nintendo DS": "nds"
+                    };
+                    const button = document.createElement("button");
+                    const select = document.createElement("select");
+
+                    for (const type in cores) {
+                        const option = document.createElement("option");
+                        option.value = cores[type];
+                        option.textContent = type;
+                        select.appendChild(option);
+                    }
+
+                    button.onclick = () => resolve(select[select.selectedIndex].value);
+                    button.textContent = "Load game";
+                    box.innerHTML = "";
+                    box.appendChild(select);
+                    box.appendChild(button);
+                });
+            }
+
+            function unsupportedRom() {
+                const message = "Por ahora solo se admiten ROMs de GBA y DS.";
+                if (typeof box !== "undefined" && box) box.textContent = message;
+                else alert(message);
+            }
+
             async function run(upload, file) {
+                const fileName = upload ? input.files[0].name : file;
+                const parts = fileName.split(".");
+                const ext = (parts.pop() || "").toLowerCase();
+                const core = supportedExtensions.includes(ext) ? await getCore(ext) : null;
+                if (!core) {
+                    unsupportedRom();
+                    return;
+                }
                 const url = upload ? input.files[0] : `roms/${file}`;
-                const parts = upload ? input.files[0].name.split(".") : file.split(".");
-
-                const biosUrl = biosFileInput.files.length > 0 ? biosFileInput.files[0] : "";
-
-                const core = await (async (ext) => {
-                    if (["fds", "nes", "unif", "unf"].includes(ext))
-                        return "nes"
-
-                    if (["smc", "fig", "sfc", "gd3", "gd7", "dx2", "bsx", "swc"].includes(ext))
-                        return "snes"
-
-                    if (["z64", "n64"].includes(ext))
-                        return "n64"
-
-                    if (["pce"].includes(ext))
-                        return "pce"
-
-                    if (["ngp", "ngc"].includes(ext))
-                        return "ngp"
-
-                    if (["ws", "wsc"].includes(ext))
-                        return "ws"
-
-                    if (["col", "cv"].includes(ext))
-                        return "coleco"
-
-                    if (["d64"].includes(ext))
-                        return "vice_x64sc"
-                    
-                    if (["md", "sg", "smd", "gen"].includes(ext))
-                        return "segaMD"
-
-                    if (["nds", "gba", "gb", "z64", "n64"].includes(ext))
-                        return ext
-
-                    if (["3ds", "cci", "cia", "cxi", "app"].includes(ext))
-                        return "3ds"
-
-                    return await new Promise(resolve => {
-                        var coreValues = {
-                            "Nintendo 64": "n64",
-                            "Nintendo Game Boy": "gb",
-                            "Nintendo Game Boy Advance": "gba",
-                            "Nintendo DS": "nds",
-                            "Nintendo Entertainment System": "nes",
-                            "Super Nintendo Entertainment System": "snes",
-                            "PlayStation": "psx",
-                            "Virtual Boy": "vb",
-                            "Sega Mega Drive": "segaMD",
-                            "Sega Master System": "segaMS",
-                            "Sega CD": "segaCD",
-                            "Atari Lynx": "lynx",
-                            "Sega 32X": "sega32x",
-                            "Atari Jaguar": "jaguar",
-                            "Sega Game Gear": "segaGG",
-                            "Sega Saturn": "segaSaturn",
-                            "Atari 7800": "atari7800",
-                            "Atari 2600": "atari2600",
-                            "Arcade": "arcade",
-                            "NEC TurboGrafx-16/SuperGrafx/PC Engine": "pce",
-                            "NEC PC-FX": "pcfx",
-                            "SNK NeoGeo Pocket (Color)": "ngp",
-                            "Bandai WonderSwan (Color)": "ws",
-                            "ColecoVision": "coleco",
-                            "Commodore 64": "vice_x64sc",
-                            "Commodore 128": "vice_x128",
-                            "Commodore VIC20": "vice_xvic",
-                            "Commodore Plus/4": "vice_xplus4",
-                            "Commodore PET": "vice_xpet",
-                            "Amiga": "puae"
-                        }
-                        
-                        if (enableThreads) {
-                            coreValues["DOSBOX-PURE"] = "dosbox_pure";
-                            coreValues["PlayStation Portable"] = "ppsspp";
-                            coreValues["Nintendo 3DS"] = "3ds";
-                        }
-
-                        for (let core in coreValues) {
-                            if (core.toLowerCase() === ext) {
-                                resolve(core)
-                            }
-                        }
- 
-                        const cores = Object.keys(coreValues).sort().reduce(
-                            (obj, key) => { 
-                                obj[key] = coreValues[key]; 
-                                return obj;
-                            }, 
-                            {}
-                        );
-
-                        const button = document.createElement("button")
-                        const select = document.createElement("select")
-
-                        for (const type in cores) {
-                            const option = document.createElement("option")
-
-                            option.value = cores[type]
-                            option.textContent = type
-                            select.appendChild(option)
-                        }
-
-                        button.onclick = () => resolve(select[select.selectedIndex].value)
-                        button.textContent = "Load game"
-                        box.innerHTML = ""
-
-                        box.appendChild(select)
-                        box.appendChild(button)
-                    })
-                })(parts.pop())
 
                 const div = document.createElement("div")
                 const sub = document.createElement("div")
@@ -409,13 +341,14 @@
                 const top = document.getElementById("top");
                 top.remove();
                 box.remove();
+                const intro = document.getElementById("intro");
+                if (intro) intro.remove();
                 div.appendChild(sub);
-                advanced.remove();
                 document.body.appendChild(div)
 
                 window.EJS_player = "#game";
-                window.EJS_gameName = parts.shift();
-                window.EJS_biosUrl = biosUrl;
+                window.EJS_gameName = parts.join(".");
+                window.EJS_biosUrl = "";
                 window.EJS_gameUrl = url;
                 window.EJS_core = core;
                 window.EJS_pathtodata = "data/";
@@ -435,6 +368,13 @@
             }
             
             input.onchange = async () => {
+                if (!input.files[0]) return;
+                const ext = (input.files[0].name.split(".").pop() || "").toLowerCase();
+                if (!supportedExtensions.includes(ext)) {
+                    input.value = "";
+                    unsupportedRom();
+                    return;
+                }
                 run(true);
             }
             

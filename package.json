@@ -23,6 +23,7 @@
     "dependencies": {
         "@node-minify/clean-css": "^10.4.0",
         "@node-minify/core": "^10.4.0",
+        "archiver": "^8.0.0",
         "http-server": "^14.1.1",
         "node-7z": "^3.0.0"
     },
