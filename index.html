@@ -358,6 +358,9 @@
                 if (browserMode) {
                     window.EJS_browserMode = browserMode;
                 }
+                window.EJS_Buttons = {
+                    exitEmulation: false
+                };
                 window.EJS_askBeforeExit = false;
                 window.EJS_onExit = () => {
                         alert("The emulator has exited. This callback can be used to do any cleanup or show a message to the user.");

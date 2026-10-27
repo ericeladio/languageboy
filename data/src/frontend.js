@@ -222,6 +222,9 @@ class EJS_Frontend {
         this.dualFrame = this.ejs.createElement("div");
         this.dualFrame.classList.add("ejs_dual_frame");
         this.game.appendChild(this.dualFrame);
+        this.dualHinge = this.ejs.createElement("div");
+        this.dualHinge.classList.add("ejs_dual_hinge");
+        this.game.appendChild(this.dualHinge);
         this.game.appendChild(this.dualPanel);
         this.dsTranslateButton = this.ejs.createElement("button");
         this.dsTranslateButton.classList.add("ejs_dual_pad_translate");
@@ -242,6 +245,9 @@ class EJS_Frontend {
         this.preloadOCR();
     }
     setDualView(view) {
+        if (view === "translate" && this.isDualNDS() && document.pointerLockElement === this.canvas) {
+            this.exitPointerLock();
+        }
         this.elements.parent.classList.toggle("ejs_translate_view", view === "translate");
     }
     setDualResult(mode, original, translation) {
@@ -451,6 +457,94 @@ class EJS_Frontend {
         warning.classList.add("ejs_anki_delete_warning");
         warning.innerText = this.localization("This cannot be undone");
         content.appendChild(warning);
+    }
+    openEditAnkiCard(collection, index) {
+        const card = collection.cards[index];
+        if (!card) return;
+        const makeInput = (value, maxLength, multiline) => {
+            const input = this.ejs.createElement(multiline ? "textarea" : "input");
+            if (multiline) {
+                input.rows = 3;
+                input.classList.add("ejs_save_word_textarea");
+            } else {
+                input.type = "text";
+            }
+            input.maxLength = maxLength;
+            input.value = value || "";
+            input.autocomplete = "off";
+            input.spellcheck = false;
+            input.classList.add("ejs_save_word_input");
+            return input;
+        };
+        const wordInput = makeInput(card.en, 200, false);
+        const translationInput = makeInput(card.es, 500, false);
+        const exampleInput = makeInput(card.example, 4000, true);
+        const exampleTranslationInput = makeInput(card.exampleTranslation, 4000, true);
+        const popup = this.createPopup("Edit word", {
+            "Save": () => {
+                const word = wordInput.value.trim();
+                const translation = translationInput.value.trim();
+                const example = exampleInput.value.trim();
+                const exampleTranslation = exampleTranslationInput.value.trim();
+                if (!word) {
+                    wordInput.focus();
+                    return;
+                }
+                if (!translation) {
+                    translationInput.focus();
+                    return;
+                }
+                if (!example) {
+                    exampleInput.focus();
+                    return;
+                }
+                const duplicate = collection.cards.some((saved, i) => {
+                    if (i === index) return false;
+                    const savedExample = (saved.example || saved.en || "").trim();
+                    return (saved.en || "").trim().toLowerCase() === word.toLowerCase() && savedExample === example;
+                });
+                if (duplicate) {
+                    status.innerText = this.localization("Card already saved");
+                    return;
+                }
+                collection.cards[index] = {
+                    ...card,
+                    en: word,
+                    es: translation,
+                    example: example,
+                    exampleTranslation: exampleTranslation
+                };
+                this.saveAnkiState();
+                this.openAnkiExport();
+            },
+            "Cancel": () => this.openAnkiExport()
+        });
+        const body = this.ejs.createElement("div");
+        body.classList.add("ejs_save_word_body");
+        popup.appendChild(body);
+        const collectionInfo = this.ejs.createElement("div");
+        collectionInfo.classList.add("ejs_save_word_collection");
+        collectionInfo.innerText = collection.name + " · " + this.languageName(collection.fromLang) + " → " + this.languageName(collection.toLang);
+        body.appendChild(collectionInfo);
+        const makeField = (label, input) => {
+            const field = this.ejs.createElement("label");
+            field.classList.add("ejs_save_word_field");
+            const text = this.ejs.createElement("span");
+            text.classList.add("ejs_save_word_label");
+            text.innerText = this.localization(label);
+            field.appendChild(text);
+            field.appendChild(input);
+            return field;
+        };
+        body.appendChild(makeField("Word to learn", wordInput));
+        body.appendChild(makeField("Word translation", translationInput));
+        body.appendChild(makeField("Example", exampleInput));
+        body.appendChild(makeField("Example translation", exampleTranslationInput));
+        const status = this.ejs.createElement("div");
+        status.classList.add("ejs_save_word_status");
+        body.appendChild(status);
+        wordInput.focus();
+        wordInput.select();
     }
     tokenizeExample(text) {
         const segments = [];
@@ -802,14 +896,30 @@ class EJS_Frontend {
                 exampleTranslation.innerText = card.exampleTranslation;
                 texts.appendChild(exampleTranslation);
             }
+            const actions = this.ejs.createElement("div");
+            actions.classList.add("ejs_anki_actions");
+            const edit = this.ejs.createElement("button");
+            edit.type = "button";
+            edit.classList.add("ejs_anki_edit");
+            edit.title = this.localization("Edit word");
+            edit.setAttribute("aria-label", this.localization("Edit word"));
+            edit.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>';
+            edit.addEventListener("click", () => {
+                this.openEditAnkiCard(collection, i);
+            });
             const remove = this.ejs.createElement("button");
+            remove.type = "button";
             remove.classList.add("ejs_anki_remove");
-            remove.innerText = "✕";
+            remove.title = this.localization("Delete card");
+            remove.setAttribute("aria-label", this.localization("Delete card"));
+            remove.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
             remove.addEventListener("click", () => {
                 this.confirmDeleteAnkiCard(collection, i);
             });
+            actions.appendChild(edit);
+            actions.appendChild(remove);
             item.appendChild(texts);
-            item.appendChild(remove);
+            item.appendChild(actions);
             list.appendChild(item);
         });
         body.appendChild(list);
@@ -1071,6 +1181,20 @@ class EJS_Frontend {
                 this.dualFrame.style.width = "";
                 this.dualFrame.style.height = "";
             }
+            if (this.dualHinge) {
+                this.dualHinge.style.left = "";
+                this.dualHinge.style.top = "";
+                this.dualHinge.style.width = "";
+                this.dualHinge.style.height = "";
+            }
+            if (this.virtualGamepad) {
+                const bottom = this.virtualGamepad.querySelector(".ejs_virtualGamepad_bottom");
+                if (bottom) {
+                    bottom.style.left = "";
+                    bottom.style.marginLeft = "";
+                    bottom.style.right = "";
+                }
+            }
             if (this.dualPadTranslateButton) {
                 this.dualPadTranslateButton.style.left = "";
                 this.dualPadTranslateButton.style.top = "";
@@ -1132,17 +1256,52 @@ class EJS_Frontend {
         if (this.isDualNDS()) {
             const screenHeight = Math.floor(panelHeight / 2);
             const screenTop = gameTop + panelHeight - screenHeight;
+            const frameInset = 18;
             this.dualPanel.style.left = gameLeft + "px";
             this.dualPanel.style.top = screenTop + "px";
             this.dualPanel.style.width = panelWidth + "px";
             this.dualPanel.style.height = screenHeight + "px";
+            if (this.dualFrame) {
+                this.dualFrame.style.left = (gameLeft - frameInset) + "px";
+                this.dualFrame.style.top = (gameTop - frameInset) + "px";
+                this.dualFrame.style.width = (panelWidth + frameInset * 2) + "px";
+                this.dualFrame.style.height = (panelHeight + frameInset * 2) + "px";
+            }
+            if (this.dualHinge) {
+                const hingeHeight = 18;
+                this.dualHinge.style.left = gameLeft + "px";
+                this.dualHinge.style.top = (gameTop + Math.round(panelHeight / 2) - hingeHeight / 2) + "px";
+                this.dualHinge.style.width = panelWidth + "px";
+                this.dualHinge.style.height = hingeHeight + "px";
+            }
+            if (this.virtualGamepad) {
+                const bottom = this.virtualGamepad.querySelector(".ejs_virtualGamepad_bottom");
+                if (bottom) {
+                    const vpr = this.virtualGamepad.getBoundingClientRect();
+                    const layoutWidth = this.virtualGamepad.offsetWidth || vpr.width;
+                    const scale = layoutWidth ? vpr.width / layoutWidth : 1;
+                    const originX = layoutWidth / 2;
+                    const layoutLeft = vpr.left - originX * (1 - scale);
+                    const bw = bottom.offsetWidth || 148;
+                    const frameRight = gameLeft + panelWidth + frameInset;
+                    const sideSpace = gr.width - frameRight;
+                    const outside = sideSpace >= bw + 16;
+                    const desiredAbs = outside ?
+                        gr.left + frameRight + 16 :
+                        gr.left + gameLeft + panelWidth - bw - 12;
+                    const left = originX + (desiredAbs - layoutLeft - originX) / scale;
+                    bottom.style.left = Math.round(left) + "px";
+                    bottom.style.marginLeft = "0px";
+                    bottom.style.right = "auto";
+                }
+            }
             if (this.dsTranslateButton) {
                 const bw = this.dsTranslateButton.offsetWidth || 45;
                 const bh = this.dsTranslateButton.offsetHeight || 28;
-                const sideSpace = gr.width - (gameLeft + panelWidth);
+                const sideSpace = gr.width - (gameLeft + panelWidth + frameInset);
                 const outside = sideSpace >= bw + 16;
                 this.dsTranslateButton.style.left = (outside ?
-                    gameLeft + panelWidth + 16 :
+                    gameLeft + panelWidth + frameInset + 16 :
                     gameLeft + panelWidth - bw - 12) + "px";
                 this.dsTranslateButton.style.top = (outside ?
                     screenTop + Math.round((screenHeight - bh) / 2) :
@@ -1157,13 +1316,19 @@ class EJS_Frontend {
         this.dualPanel.style.width = panelWidth + "px";
         this.dualPanel.style.height = panelHeight + "px";
         if (this.dualFrame) {
-            const frameInset = 10;
+            const frameInset = 18;
             this.dualFrame.style.left = (gameLeft - frameInset) + "px";
             this.dualFrame.style.top = (gameTop - frameInset) + "px";
             this.dualFrame.style.width = (panelWidth + frameInset * 2) + "px";
             this.dualFrame.style.height = (panelHeight * 2 + frameInset * 2) + "px";
         }
         if (this.virtualGamepad) {
+            const bottom = this.virtualGamepad.querySelector(".ejs_virtualGamepad_bottom");
+            if (bottom) {
+                bottom.style.left = "";
+                bottom.style.marginLeft = "";
+                bottom.style.right = "";
+            }
             const pr = this.elements.parent.getBoundingClientRect();
             const panelRect = this.dualPanel.getBoundingClientRect();
             this.virtualGamepad.style.left = Math.round(panelRect.left - pr.left) + "px";
@@ -1172,12 +1337,14 @@ class EJS_Frontend {
             this.virtualGamepad.style.bottom = Math.round(Math.max(50, pr.bottom - panelRect.bottom)) + "px";
             if (this.dualPadTranslateButton) {
                 const startBtn = this.virtualGamepad.querySelector(".b_start");
-                if (startBtn) {
+                const dpadMain = this.virtualGamepad.querySelector(".ejs_dpad_main");
+                if (startBtn && dpadMain) {
                     const sr = startBtn.getBoundingClientRect();
+                    const dr = dpadMain.getBoundingClientRect();
                     const bw = this.dualPadTranslateButton.offsetWidth;
                     const bh = this.dualPadTranslateButton.offsetHeight;
                     this.dualPadTranslateButton.style.left = Math.round(sr.left + sr.width / 2 - panelRect.left - bw / 2) + "px";
-                    this.dualPadTranslateButton.style.top = Math.round(sr.top - panelRect.top - bh - 10) + "px";
+                    this.dualPadTranslateButton.style.top = Math.round(dr.top + dr.height / 2 - panelRect.top - bh / 2) + "px";
                     this.dualPadTranslateButton.style.right = "auto";
                     this.dualPadTranslateButton.style.bottom = "auto";
                 }
@@ -2200,16 +2367,10 @@ class EJS_Frontend {
 
         this.elements.menu.appendChild(volumeSettings);
 
-        const contextMenuButton = addButton(this.ejs.config.buttonOpts.contextMenu, () => {
-            if (this.elements.contextmenu.style.display === "none") {
-                this.elements.contextmenu.style.display = "block";
-                this.elements.contextmenu.style.left = (getComputedStyle(this.elements.parent).width.split("px")[0] / 2 - getComputedStyle(this.elements.contextmenu).width.split("px")[0] / 2) + "px";
-                this.elements.contextmenu.style.top = (getComputedStyle(this.elements.parent).height.split("px")[0] / 2 - getComputedStyle(this.elements.contextmenu).height.split("px")[0] / 2) + "px";
-                setTimeout(this.menu.close.bind(this), 20);
-            } else {
-                this.elements.contextmenu.style.display = "none";
-            }
-        });
+        const favoriteWordsButton = addButton({
+            icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>',
+            displayName: "Favorite words"
+        }, () => this.openAnkiExport());
 
         this.diskParent = this.ejs.createElement("div");
         this.diskParent.id = "ejs_disksMenu";
@@ -2365,7 +2526,6 @@ class EJS_Frontend {
             playPause: [pauseButton, playButton],
             restart: [restartButton],
             settings: [settingButton],
-            contextMenu: [contextMenuButton],
             fullscreen: [enter, exit],
             saveState: [saveState],
             loadState: [loadState],
@@ -2387,7 +2547,6 @@ class EJS_Frontend {
                 pauseButton.style.display = "none";
                 playButton.style.display = "none";
             }
-            if (this.ejs.config.buttonOpts.contextMenu.visible === false && this.ejs.config.buttonOpts.rightClick !== false && this.ejs.isMobile === false) contextMenuButton.style.display = "none"
             if (this.ejs.config.buttonOpts.restart.visible === false) restartButton.style.display = "none"
             if (this.ejs.config.buttonOpts.settings.visible === false) settingButton[0].style.display = "none"
             if (this.ejs.config.buttonOpts.fullscreen.visible === false) {
@@ -2421,7 +2580,7 @@ class EJS_Frontend {
             // Hide all except settings button.
             pauseButton.style.display = "none";
             playButton.style.display = "none";
-            contextMenuButton.style.display = "none";
+            favoriteWordsButton.style.display = "none";
             restartButton.style.display = "none";
             enter.style.display = "none";
             exit.style.display = "none";
@@ -4383,17 +4542,6 @@ class EJS_Frontend {
 
         const home = createSettingParent();
 
-        const ankiRow = this.ejs.createElement("div");
-        ankiRow.classList.add("ejs_settings_main_bar");
-        const ankiSpan = this.ejs.createElement("span");
-        ankiSpan.innerText = "Export Anki";
-        const ankiCurrent = this.ejs.createElement("div");
-        ankiCurrent.classList.add("ejs_settings_main_bar_selected");
-        ankiSpan.appendChild(ankiCurrent);
-        ankiRow.appendChild(ankiSpan);
-        ankiRow.addEventListener("click", () => this.openAnkiExport());
-        home.appendChild(ankiRow);
-
         this.handleSettingsResize = () => {
             let needChange = false;
             if (this.settingsMenu.style.display !== "") {
@@ -4763,6 +4911,16 @@ class EJS_Frontend {
             "enabled": this.localization("Enabled"),
         }, (this.ejs.enableMouseLock === true ? "enabled" : "disabled"), inputOptions, true);
 
+        if (this.isDualNDS()) {
+            addToMenu(this.localization("DS Touch Mode"), "nds-touch-mode", {
+                "Touch": this.localization("Touch (follows the PC cursor)"),
+                "Mouse": this.localization("Mouse (relative, shows the emulator cursor)"),
+                "Joystick": this.localization("Joystick (right analog)"),
+                "disabled": this.localization("Disabled")
+            }, (this.ejs.getSettingValue("nds-touch-mode") || "Touch"), inputOptions, true,
+            this.localization("How the mouse interacts with the DS touch screen. Touch keeps a single pointer that matches the PC cursor."));
+        }
+
         addToMenu(this.localization("Autofire Interval"), "autofireInterval", {
             "20": "20ms",
             "50": "50ms",
@@ -4858,6 +5016,7 @@ class EJS_Frontend {
             const coreOptions = createSettingParent(true, "Core Options", home);
             coreOptsJSON.options.forEach(option => {
                 if (option.visible === false || option.values.length <= 1) return;
+                if (this.isDualNDS() && option.key === "melonds_touch_mode") return;
                 const availableOptions = {};
                 option.values.forEach(value => {
                     availableOptions[value.value] = this.localization(value.label, this.ejs.config.settingsLanguage);

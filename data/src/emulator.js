@@ -546,6 +546,9 @@ class EmulatorJS {
                     this.repository = core.repo;
                     this.defaultCoreOpts = core.options;
                     this.enableMouseLock = core.options.supportsMouse;
+                    if (this.getCore(true) === "nds") {
+                        this.enableMouseLock = false;
+                    }
                     this.retroarchOpts = core.retroarchOpts;
                     this.saveFileExt = core.save;
                 } else if (k === "license.txt") {
@@ -1052,6 +1055,9 @@ class EmulatorJS {
                 this.frontend.hideDisksButton();
             }
             this.loadSettings();
+            if (this.getCore(true) === "nds") {
+                this.gameManager.setVariable("melonds_touch_mode", this.getSettingValue("nds-touch-mode") || "Touch");
+            }
             this.frontend.updateCheatUI();
             this.frontend.updateGamepadLabels();
             if (!this.muted) this.setVolume(this.volume);
@@ -1991,6 +1997,11 @@ class EmulatorJS {
             this.gameManager.setAltKeyEnabled(value === "enabled");
         } else if (option === "lockMouse") {
             this.enableMouseLock = (value === "enabled");
+            if (!this.enableMouseLock) {
+                this.frontend.exitPointerLock();
+            }
+        } else if (option === "nds-touch-mode") {
+            this.gameManager.setVariable("melonds_touch_mode", value);
         } else if (option === "autofireInterval") {
             this.defaultAutoFireInterval = parseInt(value);
         } else if (option.startsWith("controller-port-device-p")) {

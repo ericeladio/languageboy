@@ -278,20 +278,50 @@
     pointer-events: none;
     box-sizing: border-box;
     border: 18px solid #1e3f78;
+    border-top-color: #2a5aa0;
+    border-bottom-color: #17335f;
     border-radius: 22px;
     box-shadow:
-        inset 0 0 0 2px #0d1f3c,
-        inset 0 2px 0 rgba(150, 195, 255, 0.45),
-        inset 0 -2px 0 rgba(0, 0, 0, 0.5);
+        0 0 0 2px #0d1f3c,
+        0 8px 20px rgba(0, 0, 0, 0.45);
 }
 
 .ejs_dual_screen .ejs_dual_frame {
     display: block;
 }
 
+.ejs_dual_hinge {
+    display: none;
+    position: absolute;
+    z-index: 2;
+    pointer-events: none;
+    box-sizing: border-box;
+    border-top: 2px solid rgba(150, 195, 255, 0.3);
+    border-bottom: 2px solid rgba(0, 0, 0, 0.7);
+    border-radius: 4px;
+    background: linear-gradient(
+        to bottom,
+        #0a1628 0%,
+        #16305c 25%,
+        #1e3f78 50%,
+        #16305c 75%,
+        #0a1628 100%
+    );
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.45);
+}
+
+.ejs_dual_screen_nds .ejs_dual_hinge {
+    display: block;
+}
+
 .ejs_dual_screen .ejs_canvas {
     height: 50%;
     box-shadow: inset 0 0 26px rgba(0, 0, 0, 0.6);
+}
+
+.ejs_dual_screen:not(.ejs_dual_screen_nds) .ejs_canvas {
+    top: 18px;
+    height: calc(50% - 18px);
 }
 
 .ejs_dual_panel {
@@ -310,10 +340,10 @@
 .ejs_dual_panel::before {
     content: "";
     position: absolute;
-    top: -16px;
+    top: 0;
     left: 0;
     right: 0;
-    height: 32px;
+    height: 18px;
     background: linear-gradient(
         to bottom,
         #0a1628 0%,
@@ -355,11 +385,11 @@
 }
 
 .ejs_dual_screen_nds .ejs_canvas {
-    height: 100%;
+    top: 18px;
+    height: calc(100% - 36px);
     box-shadow: none;
 }
 
-.ejs_dual_screen_nds .ejs_dual_frame,
 .ejs_dual_screen_nds .ejs_dual_gamepad {
     display: none;
 }
@@ -448,6 +478,7 @@
     width: 45px;
     height: 28px;
     padding: 0;
+    margin: 0;
     background: #faf6ee;
     border: 1px solid #ccc;
     border-radius: 5px;
@@ -1013,18 +1044,64 @@
     text-overflow: ellipsis;
 }
 
+.ejs_anki_actions {
+    display: flex;
+    align-items: center;
+    align-self: center;
+    gap: 4px;
+    flex: 0 0 auto;
+}
+
+.ejs_anki_edit,
 .ejs_anki_remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 28px;
+    width: 28px;
+    min-width: 28px;
+    max-width: 28px;
+    height: 28px;
+    min-height: 28px;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 5px;
     background: none;
-    border: none;
-    color: #e55;
-    font-size: 16px;
+    color: #aaa;
+    font-size: 12px;
+    line-height: 0;
     cursor: pointer;
-    padding: 4px 8px;
-    flex-shrink: 0;
+    box-sizing: border-box;
+}
+
+.ejs_anki_edit svg,
+.ejs_anki_remove svg {
+    width: 14px;
+    height: 14px;
+    pointer-events: none;
+}
+
+.ejs_anki_edit:hover {
+    color: rgba(var(--ejs-primary-color), 1);
+    border-color: rgba(var(--ejs-primary-color), 0.45);
+    background: rgba(var(--ejs-primary-color), 0.12);
+}
+
+.ejs_anki_remove {
+    color: #e55;
 }
 
 .ejs_anki_remove:hover {
     color: #f77;
+    border-color: rgba(238, 85, 85, 0.45);
+    background: rgba(238, 85, 85, 0.12);
+}
+
+.ejs_save_word_textarea {
+    min-height: 74px;
+    resize: vertical;
+    line-height: 1.45;
+    font-family: inherit;
 }
 
 .ejs_anki_counter {
