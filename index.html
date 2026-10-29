@@ -203,6 +203,374 @@
                 box-shadow: 0 0 12px rgba(26, 175, 255, 0.35);
             }
 
+            #favorites-actions {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                justify-content: center;
+                gap: 10px;
+                margin-top: -6px;
+            }
+
+            #favorites-button {
+                display: inline-flex;
+                align-items: center;
+                gap: 9px;
+                width: auto;
+                margin: 0;
+                padding: 0.75em 1.25em;
+                border-radius: 999px;
+                border: 1px solid rgba(77, 169, 255, 0.5);
+                background-color: rgba(26, 175, 255, 0.08);
+                color: var(--ink);
+                font-size: 0.82rem;
+                letter-spacing: 0.06em;
+            }
+
+            #favorites-button svg {
+                width: 18px;
+                height: 18px;
+                flex: 0 0 auto;
+                color: var(--neon);
+                filter: drop-shadow(0 0 6px rgba(26, 175, 255, 0.6));
+            }
+
+            #favorites-button:hover {
+                border-color: var(--neon-strong);
+                background-color: rgba(26, 175, 255, 0.16);
+                color: #ffffff;
+            }
+
+            #favorites-modal {
+                position: fixed;
+                inset: 0;
+                z-index: 20;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 20px;
+                background: rgba(2, 5, 9, 0.78);
+                backdrop-filter: blur(6px);
+            }
+
+            #favorites-modal[hidden] {
+                display: none;
+            }
+
+            .favorites-dialog {
+                width: min(640px, 100%);
+                max-height: min(80vh, 760px);
+                display: flex;
+                flex-direction: column;
+                gap: 14px;
+                padding: 22px;
+                border: 1px solid rgba(77, 169, 255, 0.35);
+                border-radius: 18px;
+                background:
+                    radial-gradient(120% 100% at 50% 0%, rgba(26, 175, 255, 0.12), transparent 65%),
+                    #070c12;
+                box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(26, 175, 255, 0.12);
+                text-align: left;
+            }
+
+            .favorites-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+            }
+
+            .favorites-header h2 {
+                margin: 0;
+                font-size: 1.05rem;
+                letter-spacing: 0.08em;
+                text-transform: uppercase;
+                color: var(--neon);
+                text-shadow: 0 0 10px rgba(26, 175, 255, 0.55);
+            }
+
+            #favorites-close {
+                width: 34px;
+                height: 34px;
+                min-width: 34px;
+                margin: 0;
+                padding: 0;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 50%;
+                font-size: 1.15rem;
+                line-height: 1;
+            }
+
+            .favorites-toolbar {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .favorites-toolbar[hidden] {
+                display: none;
+            }
+
+            .favorites-toolbar label {
+                font-size: 0.7rem;
+                letter-spacing: 0.14em;
+                text-transform: uppercase;
+                color: #6fb2e8;
+            }
+
+            #favorites-select {
+                flex: 1;
+                min-width: 140px;
+                width: auto;
+                margin: 0;
+                padding: 0.55em 0.85em;
+                font-size: 0.82rem;
+            }
+
+            .favorites-tool-button {
+                width: auto;
+                margin: 0;
+                padding: 0.45em 0.7em;
+                border-radius: 8px;
+                font-size: 0.7rem;
+                letter-spacing: 0.04em;
+            }
+
+            .favorites-tool-button:disabled {
+                opacity: 0.4;
+                cursor: not-allowed;
+            }
+
+            #favorites-list {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                overflow-y: auto;
+                padding-right: 4px;
+            }
+
+            .favorites-card {
+                display: flex;
+                align-items: flex-start;
+                justify-content: space-between;
+                gap: 12px;
+                padding: 12px 14px;
+                border: 1px solid rgba(77, 169, 255, 0.18);
+                border-radius: 12px;
+                background-color: rgba(255, 255, 255, 0.025);
+            }
+
+            .favorites-card-texts {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+                flex: 1;
+                min-width: 0;
+                overflow-wrap: anywhere;
+            }
+
+            .favorites-card-actions {
+                display: flex;
+                flex: 0 0 auto;
+                gap: 6px;
+            }
+
+            .favorites-card-actions button {
+                width: auto;
+                margin: 0;
+                padding: 0.4em 0.7em;
+                border-radius: 8px;
+                font-size: 0.68rem;
+            }
+
+            .favorites-card-actions .favorites-remove-button {
+                border-color: rgba(255, 107, 129, 0.4);
+                color: #ff9fb0;
+            }
+
+            .favorites-card-actions .favorites-remove-button:hover {
+                border-color: #ff6b81;
+                box-shadow: 0 0 12px rgba(255, 107, 129, 0.3);
+            }
+
+            .favorites-word {
+                font-size: 0.98rem;
+                font-weight: 700;
+                color: var(--ink);
+            }
+
+            .favorites-translation {
+                font-size: 0.9rem;
+                color: #7fd0ff;
+            }
+
+            .favorites-example {
+                margin-top: 4px;
+                font-size: 0.8rem;
+                line-height: 1.5;
+                color: #91b9dd;
+            }
+
+            .favorites-example-translation {
+                font-size: 0.78rem;
+                line-height: 1.5;
+                font-style: italic;
+                color: #6f96b8;
+            }
+
+            .favorites-empty {
+                padding: 24px 12px;
+                border: 1px dashed rgba(77, 169, 255, 0.3);
+                border-radius: 12px;
+                color: #91b9dd;
+                font-size: 0.84rem;
+                text-align: center;
+            }
+
+            .favorites-footer {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                font-size: 0.72rem;
+                letter-spacing: 0.08em;
+                color: #6fb2e8;
+            }
+
+            #favorites-export {
+                width: auto;
+                margin: 0;
+                padding: 0.6em 1.1em;
+                border-radius: 999px;
+                border-color: rgba(77, 169, 255, 0.5);
+                background-color: rgba(26, 175, 255, 0.12);
+                font-size: 0.74rem;
+                letter-spacing: 0.06em;
+            }
+
+            #favorites-export:disabled {
+                opacity: 0.45;
+                cursor: not-allowed;
+            }
+
+            .favorites-status {
+                min-height: 1.1em;
+                font-size: 0.75rem;
+                line-height: 1.5;
+                color: #7fd0ff;
+            }
+
+            #favorites-editor {
+                position: fixed;
+                inset: 0;
+                z-index: 30;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 20px;
+                background: rgba(2, 5, 9, 0.82);
+                backdrop-filter: blur(6px);
+            }
+
+            #favorites-editor[hidden] {
+                display: none;
+            }
+
+            .favorites-editor-dialog {
+                width: min(540px, 100%);
+                overflow-y: auto;
+            }
+
+            .favorites-collection-info {
+                font-size: 0.72rem;
+                letter-spacing: 0.08em;
+                color: #6fb2e8;
+            }
+
+            .favorites-field {
+                display: flex;
+                flex-direction: column;
+                gap: 5px;
+                font-size: 0.68rem;
+                letter-spacing: 0.12em;
+                text-transform: uppercase;
+                color: #6fb2e8;
+            }
+
+            .favorites-field input,
+            .favorites-field textarea {
+                width: 100%;
+                margin: 0;
+                padding: 0.6em 0.75em;
+                border: 1px solid rgba(77, 169, 255, 0.3);
+                border-radius: 10px;
+                background-color: #0d1620;
+                color: var(--ink);
+                font-family: inherit;
+                font-size: 0.85rem;
+                letter-spacing: normal;
+                text-transform: none;
+                resize: vertical;
+            }
+
+            .favorites-field input:focus,
+            .favorites-field textarea:focus {
+                outline: none;
+                border-color: var(--neon-strong);
+                box-shadow: 0 0 0 2px rgba(26, 175, 255, 0.18);
+            }
+
+            .favorites-editor-actions {
+                display: flex;
+                justify-content: flex-end;
+                gap: 10px;
+            }
+
+            .favorites-editor-actions button {
+                width: auto;
+                margin: 0;
+                padding: 0.6em 1.1em;
+                border-radius: 999px;
+                font-size: 0.78rem;
+            }
+
+            .favorites-editor-actions #favorites-editor-save {
+                border-color: rgba(77, 169, 255, 0.6);
+                background-color: rgba(26, 175, 255, 0.14);
+                color: var(--ink);
+            }
+
+            @media (max-width: 520px) {
+                .favorites-dialog {
+                    padding: 16px;
+                    max-height: 88vh;
+                }
+
+                .favorites-card {
+                    flex-direction: column;
+                }
+
+                .favorites-card-actions {
+                    width: 100%;
+                }
+
+                .favorites-card-actions button {
+                    flex: 1;
+                }
+
+                .favorites-footer {
+                    flex-direction: column;
+                    align-items: stretch;
+                }
+
+                #favorites-export {
+                    width: 100%;
+                }
+            }
+
             @media (max-width: 520px) {
                 #top {
                     flex-direction: column;
@@ -254,8 +622,460 @@
             Emulador para jugar y traducir juegos de <strong>GBA</strong> y <strong>DS</strong>.
             Guarda tus palabras favoritas y expórtalas como tarjetas <strong>Anki</strong>.
         </div>
+        <div id="favorites-actions">
+            <button type="button" id="favorites-button">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                Ver palabras favoritas
+            </button>
+        </div>
+        <div id="favorites-modal" hidden>
+            <div class="favorites-dialog" role="dialog" aria-modal="true" aria-labelledby="favorites-title">
+                <div class="favorites-header">
+                    <h2 id="favorites-title">Palabras favoritas</h2>
+                    <button type="button" id="favorites-close" aria-label="Cerrar">&times;</button>
+                </div>
+                <div class="favorites-toolbar" id="favorites-toolbar">
+                    <label for="favorites-select" id="favorites-select-label">Colección</label>
+                    <select id="favorites-select"></select>
+                    <button type="button" class="favorites-tool-button" id="favorites-new">Nueva</button>
+                    <button type="button" class="favorites-tool-button" id="favorites-rename">Renombrar</button>
+                    <button type="button" class="favorites-tool-button" id="favorites-delete-collection">Eliminar</button>
+                </div>
+                <div id="favorites-list"></div>
+                <div class="favorites-empty" id="favorites-empty" hidden>
+                    Todavía no guardaste palabras favoritas. Mientras jugás, seleccioná una palabra y guardala con el botón de la estrella, o creá una colección nueva.
+                </div>
+                <div class="favorites-footer">
+                    <span id="favorites-footer"></span>
+                    <button type="button" id="favorites-export">Generar ZIP</button>
+                </div>
+                <div class="favorites-status" id="favorites-status" role="status"></div>
+            </div>
+        </div>
+        <div id="favorites-editor" hidden>
+            <div class="favorites-dialog favorites-editor-dialog" role="dialog" aria-modal="true" aria-labelledby="favorites-editor-title">
+                <div class="favorites-header">
+                    <h2 id="favorites-editor-title">Editar palabra</h2>
+                    <button type="button" id="favorites-editor-close" aria-label="Cerrar">&times;</button>
+                </div>
+                <div class="favorites-collection-info" id="favorites-editor-info"></div>
+                <label class="favorites-field">Palabra
+                    <input type="text" id="favorites-editor-word" maxlength="200" autocomplete="off">
+                </label>
+                <label class="favorites-field">Traducción
+                    <input type="text" id="favorites-editor-translation" maxlength="500" autocomplete="off">
+                </label>
+                <label class="favorites-field">Ejemplo
+                    <textarea id="favorites-editor-example" rows="3" maxlength="4000"></textarea>
+                </label>
+                <label class="favorites-field">Traducción del ejemplo
+                    <textarea id="favorites-editor-example-translation" rows="3" maxlength="4000"></textarea>
+                </label>
+                <div class="favorites-status" id="favorites-editor-status" role="status"></div>
+                <div class="favorites-editor-actions">
+                    <button type="button" id="favorites-editor-save">Guardar</button>
+                    <button type="button" id="favorites-editor-cancel">Cancelar</button>
+                </div>
+            </div>
+        </div>
 
         <script>
+            const FAVORITES_STORAGE_KEY = "languageboy-anki-v2";
+            const favoritesButton = document.getElementById("favorites-button");
+            const favoritesModal = document.getElementById("favorites-modal");
+            const favoritesClose = document.getElementById("favorites-close");
+            const favoritesSelectLabel = document.getElementById("favorites-select-label");
+            const favoritesSelect = document.getElementById("favorites-select");
+            const favoritesNew = document.getElementById("favorites-new");
+            const favoritesRename = document.getElementById("favorites-rename");
+            const favoritesDeleteCollection = document.getElementById("favorites-delete-collection");
+            const favoritesList = document.getElementById("favorites-list");
+            const favoritesEmpty = document.getElementById("favorites-empty");
+            const favoritesFooter = document.getElementById("favorites-footer");
+            const favoritesExport = document.getElementById("favorites-export");
+            const favoritesStatus = document.getElementById("favorites-status");
+            const favoritesEditor = document.getElementById("favorites-editor");
+            const favoritesEditorClose = document.getElementById("favorites-editor-close");
+            const favoritesEditorInfo = document.getElementById("favorites-editor-info");
+            const favoritesEditorWord = document.getElementById("favorites-editor-word");
+            const favoritesEditorTranslation = document.getElementById("favorites-editor-translation");
+            const favoritesEditorExample = document.getElementById("favorites-editor-example");
+            const favoritesEditorExampleTranslation = document.getElementById("favorites-editor-example-translation");
+            const favoritesEditorStatus = document.getElementById("favorites-editor-status");
+            const favoritesEditorSave = document.getElementById("favorites-editor-save");
+            const favoritesEditorCancel = document.getElementById("favorites-editor-cancel");
+            let favoritesEditing = null;
+
+            function normalizeFavoritesState(state) {
+                if (!state || state.version !== 2 || !Array.isArray(state.collections)) {
+                    return { version: 2, activeCollectionId: null, collections: [], lastCollectionByPair: {} };
+                }
+                if (!state.lastCollectionByPair || typeof state.lastCollectionByPair !== "object") {
+                    state.lastCollectionByPair = {};
+                }
+                state.collections.forEach((collection) => {
+                    if (!Array.isArray(collection.cards)) collection.cards = [];
+                });
+                return state;
+            }
+
+            function readFavoritesState() {
+                try {
+                    return normalizeFavoritesState(JSON.parse(localStorage.getItem(FAVORITES_STORAGE_KEY) || "null"));
+                } catch (e) {
+                    return normalizeFavoritesState(null);
+                }
+            }
+
+            function writeFavoritesState(state) {
+                state.version = 2;
+                try {
+                    localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(state));
+                } catch (e) {}
+            }
+
+            function currentFavoritesCollection(state) {
+                return state.collections.find((collection) => collection.id === favoritesSelect.value)
+                    || state.collections.find((collection) => collection.id === state.activeCollectionId)
+                    || state.collections[0]
+                    || null;
+            }
+
+            function uniqueFavoritesCollectionName(collections, name, ignoreId) {
+                const base = (name || "").trim() || "Mi colección";
+                let candidate = base;
+                let i = 2;
+                while (collections.some((collection) => collection.id !== ignoreId && collection.name === candidate)) {
+                    candidate = base + " " + i;
+                    i += 1;
+                }
+                return candidate;
+            }
+
+            function addFavoriteText(parent, className, text) {
+                if (!text) return;
+                const element = document.createElement("div");
+                element.className = className;
+                element.textContent = text;
+                parent.appendChild(element);
+            }
+
+            function addFavoriteButton(parent, label, className, handler) {
+                const button = document.createElement("button");
+                button.type = "button";
+                button.className = className;
+                button.textContent = label;
+                button.addEventListener("click", handler);
+                parent.appendChild(button);
+                return button;
+            }
+
+            function renderFavorites(state) {
+                const collections = state.collections;
+                const selectedId = favoritesSelect.value;
+                favoritesList.textContent = "";
+                favoritesFooter.textContent = "";
+                favoritesStatus.textContent = "";
+
+                const hasCollections = collections.length > 0;
+                favoritesSelectLabel.hidden = !hasCollections;
+                favoritesSelect.hidden = !hasCollections;
+                favoritesRename.disabled = !hasCollections;
+                favoritesDeleteCollection.disabled = !hasCollections;
+                favoritesExport.disabled = true;
+
+                favoritesSelect.textContent = "";
+                collections.forEach((collection) => {
+                    const option = document.createElement("option");
+                    option.value = collection.id;
+                    option.textContent = collection.name + " (" + collection.cards.length + ")";
+                    favoritesSelect.appendChild(option);
+                });
+
+                const collection = collections.find((item) => item.id === selectedId)
+                    || collections.find((item) => item.id === state.activeCollectionId)
+                    || collections[0]
+                    || null;
+
+                if (!collection) {
+                    favoritesEmpty.hidden = false;
+                    return;
+                }
+
+                favoritesEmpty.hidden = true;
+                favoritesSelect.value = collection.id;
+                const cards = collection.cards;
+                favoritesExport.disabled = cards.length === 0;
+
+                if (cards.length === 0) {
+                    const empty = document.createElement("div");
+                    empty.className = "favorites-empty";
+                    empty.textContent = "Esta colección todavía no tiene palabras guardadas.";
+                    favoritesList.appendChild(empty);
+                } else {
+                    cards.forEach((card, index) => {
+                        const item = document.createElement("div");
+                        item.className = "favorites-card";
+
+                        const texts = document.createElement("div");
+                        texts.className = "favorites-card-texts";
+                        addFavoriteText(texts, "favorites-word", card.en);
+                        addFavoriteText(texts, "favorites-translation", card.es);
+                        addFavoriteText(texts, "favorites-example", card.example);
+                        addFavoriteText(texts, "favorites-example-translation", card.exampleTranslation);
+
+                        const actions = document.createElement("div");
+                        actions.className = "favorites-card-actions";
+                        addFavoriteButton(actions, "Editar", "favorites-edit-button", () => {
+                            openFavoritesEditor(collection.id, index);
+                        });
+                        addFavoriteButton(actions, "Eliminar", "favorites-remove-button", () => {
+                            deleteFavoriteCard(collection.id, index);
+                        });
+
+                        item.appendChild(texts);
+                        item.appendChild(actions);
+                        favoritesList.appendChild(item);
+                    });
+                }
+
+                const pair = collection.fromLang && collection.toLang
+                    ? " · " + collection.fromLang + " → " + collection.toLang
+                    : "";
+                favoritesFooter.textContent = cards.length + (cards.length === 1 ? " palabra" : " palabras") + pair;
+            }
+
+            function openFavorites() {
+                renderFavorites(readFavoritesState());
+                favoritesModal.hidden = false;
+                favoritesClose.focus();
+            }
+
+            function closeFavorites() {
+                favoritesModal.hidden = true;
+            }
+
+            function addFavoritesCollection() {
+                const state = readFavoritesState();
+                const current = currentFavoritesCollection(state);
+                const defaultName = current ? current.name + " 2" : "Mi colección";
+                const name = prompt("Nombre de la colección", defaultName);
+                if (name === null) return;
+                const collection = {
+                    id: "col_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+                    name: uniqueFavoritesCollectionName(state.collections, name),
+                    fromLang: current ? current.fromLang : "en",
+                    toLang: current ? current.toLang : "es",
+                    cards: []
+                };
+                state.collections.push(collection);
+                state.activeCollectionId = collection.id;
+                state.lastCollectionByPair[collection.fromLang + "-" + collection.toLang] = collection.id;
+                writeFavoritesState(state);
+                favoritesSelect.value = collection.id;
+                renderFavorites(state);
+            }
+
+            function renameFavoritesCollection() {
+                const state = readFavoritesState();
+                const collection = currentFavoritesCollection(state);
+                if (!collection) return;
+                const name = prompt("Renombrar colección", collection.name);
+                if (name === null) return;
+                collection.name = uniqueFavoritesCollectionName(state.collections, name, collection.id);
+                writeFavoritesState(state);
+                renderFavorites(state);
+            }
+
+            function deleteFavoritesCollection() {
+                const state = readFavoritesState();
+                const collection = currentFavoritesCollection(state);
+                if (!collection) return;
+                if (!confirm('¿Eliminar la colección "' + collection.name + '" con ' + collection.cards.length + " palabra(s)? Esta acción no se puede deshacer.")) return;
+                state.collections = state.collections.filter((item) => item.id !== collection.id);
+                for (const key of Object.keys(state.lastCollectionByPair)) {
+                    if (state.lastCollectionByPair[key] === collection.id) delete state.lastCollectionByPair[key];
+                }
+                if (state.activeCollectionId === collection.id) state.activeCollectionId = null;
+                writeFavoritesState(state);
+                favoritesSelect.value = "";
+                renderFavorites(state);
+            }
+
+            function deleteFavoriteCard(collectionId, index) {
+                const state = readFavoritesState();
+                const collection = state.collections.find((item) => item.id === collectionId);
+                const card = collection && collection.cards[index];
+                if (!card) return;
+                if (!confirm('¿Eliminar "' + (card.en || "esta palabra") + '"? Esta acción no se puede deshacer.')) return;
+                collection.cards.splice(index, 1);
+                writeFavoritesState(state);
+                favoritesSelect.value = collection.id;
+                renderFavorites(state);
+            }
+
+            function openFavoritesEditor(collectionId, index) {
+                const state = readFavoritesState();
+                const collection = state.collections.find((item) => item.id === collectionId);
+                const card = collection && collection.cards[index];
+                if (!card) return;
+                favoritesEditing = { collectionId: collectionId, index: index };
+                favoritesEditorInfo.textContent = collection.name + " · " + (collection.fromLang || "?") + " → " + (collection.toLang || "?");
+                favoritesEditorWord.value = card.en || "";
+                favoritesEditorTranslation.value = card.es || "";
+                favoritesEditorExample.value = card.example || "";
+                favoritesEditorExampleTranslation.value = card.exampleTranslation || "";
+                favoritesEditorStatus.textContent = "";
+                favoritesEditor.hidden = false;
+                favoritesEditorWord.focus();
+                favoritesEditorWord.select();
+            }
+
+            function closeFavoritesEditor() {
+                favoritesEditor.hidden = true;
+                favoritesEditing = null;
+            }
+
+            function saveFavoritesEditor() {
+                if (!favoritesEditing) return;
+                const state = readFavoritesState();
+                const collection = state.collections.find((item) => item.id === favoritesEditing.collectionId);
+                const index = favoritesEditing.index;
+                const card = collection && collection.cards[index];
+                if (!card) {
+                    closeFavoritesEditor();
+                    renderFavorites(state);
+                    return;
+                }
+                const word = favoritesEditorWord.value.trim();
+                const translation = favoritesEditorTranslation.value.trim();
+                const example = favoritesEditorExample.value.trim();
+                if (!word) {
+                    favoritesEditorStatus.textContent = "Escribí la palabra.";
+                    favoritesEditorWord.focus();
+                    return;
+                }
+                if (!translation) {
+                    favoritesEditorStatus.textContent = "Escribí la traducción.";
+                    favoritesEditorTranslation.focus();
+                    return;
+                }
+                if (!example) {
+                    favoritesEditorStatus.textContent = "Escribí un ejemplo.";
+                    favoritesEditorExample.focus();
+                    return;
+                }
+                const duplicate = collection.cards.some((saved, i) => {
+                    if (i === index) return false;
+                    const savedExample = (saved.example || saved.en || "").trim();
+                    return (saved.en || "").trim().toLowerCase() === word.toLowerCase() && savedExample === example;
+                });
+                if (duplicate) {
+                    favoritesEditorStatus.textContent = "Esa palabra ya está guardada en esta colección.";
+                    return;
+                }
+                collection.cards[index] = {
+                    ...card,
+                    en: word,
+                    es: translation,
+                    example: example,
+                    exampleTranslation: favoritesEditorExampleTranslation.value.trim()
+                };
+                writeFavoritesState(state);
+                closeFavoritesEditor();
+                favoritesSelect.value = collection.id;
+                renderFavorites(readFavoritesState());
+            }
+
+            function safeFavoritesFileName(text) {
+                const base = String(text || "")
+                    .normalize("NFD")
+                    .replace(/[\u0300-\u036f]/g, "")
+                    .replace(/[^a-zA-Z0-9_-]+/g, "_")
+                    .replace(/^_+|_+$/g, "")
+                    .slice(0, 60);
+                return base || "collection";
+            }
+
+            async function exportFavorites() {
+                const state = readFavoritesState();
+                const collection = currentFavoritesCollection(state);
+                const cards = collection ? collection.cards : [];
+                if (cards.length === 0) {
+                    favoritesStatus.textContent = "No hay palabras para exportar.";
+                    return;
+                }
+                favoritesExport.disabled = true;
+                favoritesExport.textContent = "Generando...";
+                favoritesStatus.textContent = "Generando audio y ZIP...";
+                try {
+                    const response = await fetch("/api/export-anki", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            fromLang: collection.fromLang,
+                            toLang: collection.toLang,
+                            collectionName: collection.name,
+                            cards: cards.map((card) => ({
+                                en: card.en,
+                                es: card.es,
+                                example: card.example || card.en,
+                                exampleTranslation: card.exampleTranslation || ""
+                            }))
+                        })
+                    });
+                    if (!response.ok) {
+                        let message = "";
+                        try {
+                            const data = await response.json();
+                            if (data && data.error) message = data.error;
+                        } catch (e) {}
+                        throw new Error(message || ("HTTP " + response.status));
+                    }
+                    const blob = await response.blob();
+                    const url = URL.createObjectURL(blob);
+                    const date = new Date().toISOString().slice(0, 10);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = "languageboy_" + safeFavoritesFileName(collection.name) + "_" + date + ".zip";
+                    a.click();
+                    setTimeout(() => URL.revokeObjectURL(url), 1000);
+                    favoritesStatus.textContent = "ZIP generado correctamente.";
+                } catch (e) {
+                    favoritesStatus.textContent = "No se pudo generar el ZIP." + (e && e.message ? " " + e.message : "");
+                } finally {
+                    favoritesExport.disabled = cards.length === 0;
+                    favoritesExport.textContent = "Generar ZIP";
+                }
+            }
+
+            favoritesButton.addEventListener("click", openFavorites);
+            favoritesClose.addEventListener("click", closeFavorites);
+            favoritesModal.addEventListener("click", (event) => {
+                if (event.target === favoritesModal) closeFavorites();
+            });
+            favoritesSelect.addEventListener("change", () => {
+                renderFavorites(readFavoritesState());
+            });
+            favoritesNew.addEventListener("click", addFavoritesCollection);
+            favoritesRename.addEventListener("click", renameFavoritesCollection);
+            favoritesDeleteCollection.addEventListener("click", deleteFavoritesCollection);
+            favoritesExport.addEventListener("click", exportFavorites);
+            favoritesEditorClose.addEventListener("click", closeFavoritesEditor);
+            favoritesEditorCancel.addEventListener("click", closeFavoritesEditor);
+            favoritesEditorSave.addEventListener("click", saveFavoritesEditor);
+            favoritesEditor.addEventListener("click", (event) => {
+                if (event.target === favoritesEditor) closeFavoritesEditor();
+            });
+            document.addEventListener("keydown", (event) => {
+                if (event.key !== "Escape") return;
+                if (!favoritesEditor.hidden) {
+                    closeFavoritesEditor();
+                    return;
+                }
+                if (!favoritesModal.hidden) closeFavorites();
+            });
+
             const queryString = window.location.search;
             const urlParams = new URLSearchParams(queryString);
             let enableDebug = parseInt(urlParams.get("debug")) === 1 || urlParams.get("debug") === "true";
@@ -343,6 +1163,12 @@
                 box.remove();
                 const intro = document.getElementById("intro");
                 if (intro) intro.remove();
+                const favoritesActions = document.getElementById("favorites-actions");
+                if (favoritesActions) favoritesActions.remove();
+                const favoritesModalElement = document.getElementById("favorites-modal");
+                if (favoritesModalElement) favoritesModalElement.remove();
+                const favoritesEditorElement = document.getElementById("favorites-editor");
+                if (favoritesEditorElement) favoritesEditorElement.remove();
                 div.appendChild(sub);
                 document.body.appendChild(div)
 
