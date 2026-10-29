@@ -544,6 +544,37 @@
     transition: opacity 0.35s ease;
 }
 
+.ejs_dual_screen_nds .ejs_virtualGamepad_parent {
+    transform: none;
+}
+
+.ejs_dual_screen_nds .ejs_virtualGamepad_left,
+.ejs_dual_screen_nds .ejs_virtualGamepad_right,
+.ejs_dual_screen_nds .ejs_virtualGamepad_bottom {
+    transform: scale(0.9);
+}
+
+.ejs_dual_screen_nds .ejs_virtualGamepad_left {
+    transform-origin: bottom left;
+}
+
+.ejs_dual_screen_nds .ejs_virtualGamepad_right {
+    transform-origin: bottom right;
+}
+
+.ejs_dual_screen_nds .ejs_virtualGamepad_bottom {
+    transform-origin: bottom center;
+}
+
+.ejs_dual_screen_nds .ejs_dual_controls_overlay .ejs_virtualGamepad_button,
+.ejs_dual_screen_nds .ejs_dual_controls_overlay .ejs_dpad_main {
+    opacity: 0.45;
+}
+
+.ejs_dual_screen_nds .ejs_ds_translate.ejs_dual_controls_overlay {
+    opacity: 0.45;
+}
+
 .ejs_dual_screen .ejs_virtualGamepad_button {
     background-color: #faf6ee;
     border: 2px solid #d9c9a8;

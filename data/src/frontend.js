@@ -461,6 +461,13 @@ class EJS_Frontend {
     openEditAnkiCard(collection, index) {
         const card = collection.cards[index];
         if (!card) return;
+        const fromLang = card.fromLang || collection.fromLang;
+        const toLang = card.toLang || collection.toLang;
+        const originalWord = (card.en || "").trim();
+        const originalExample = (card.example || "").trim();
+        const originalTranslation = card.es || "";
+        const originalExampleTranslation = card.exampleTranslation || "";
+        const translateDelay = 800;
         const makeInput = (value, maxLength, multiline) => {
             const input = this.ejs.createElement(multiline ? "textarea" : "input");
             if (multiline) {
@@ -480,22 +487,155 @@ class EJS_Frontend {
         const translationInput = makeInput(card.es, 500, false);
         const exampleInput = makeInput(card.example, 4000, true);
         const exampleTranslationInput = makeInput(card.exampleTranslation, 4000, true);
+        let status = null;
+        let wordTimer = null;
+        let exampleTimer = null;
+        let wordRequest = 0;
+        let exampleRequest = 0;
+        let wordPromise = null;
+        let examplePromise = null;
+        let lastWord = originalWord;
+        let lastExample = originalExample;
+        const setStatus = (key) => {
+            if (status) status.innerText = key ? this.localization(key) : "";
+        };
+        const translateField = async (source, target, request, getRequest, onTranslated) => {
+            target.placeholder = this.localization("Translating");
+            try {
+                const translated = (await this.translateText(source, fromLang, toLang)).trim();
+                if (!popup.isConnected || request !== getRequest()) return;
+                target.value = translated;
+                onTranslated(source);
+            } catch (e) {
+                if (!popup.isConnected || request !== getRequest()) return;
+                if (this.ejs.debug) console.log("translate error:", e);
+                setStatus("Translation failed");
+            } finally {
+                if (popup.isConnected && request === getRequest()) target.placeholder = "";
+            }
+        };
+        const scheduleWordTranslation = () => {
+            clearTimeout(wordTimer);
+            wordTimer = null;
+            wordPromise = null;
+            const request = ++wordRequest;
+            setStatus("");
+            const word = wordInput.value.trim();
+            if (!word) {
+                translationInput.value = "";
+                translationInput.placeholder = "";
+                lastWord = "";
+                return;
+            }
+            if (word === lastWord) {
+                translationInput.placeholder = "";
+                return;
+            }
+            if (word === originalWord && originalTranslation) {
+                translationInput.value = originalTranslation;
+                translationInput.placeholder = "";
+                lastWord = word;
+                return;
+            }
+            wordTimer = setTimeout(() => {
+                wordTimer = null;
+                if (!popup.isConnected) return;
+                const pending = translateField(word, translationInput, request, () => wordRequest, (value) => {
+                    lastWord = value;
+                });
+                wordPromise = pending;
+                pending.finally(() => {
+                    if (wordPromise === pending) wordPromise = null;
+                });
+            }, translateDelay);
+        };
+        const scheduleExampleTranslation = () => {
+            clearTimeout(exampleTimer);
+            exampleTimer = null;
+            examplePromise = null;
+            const request = ++exampleRequest;
+            setStatus("");
+            const example = exampleInput.value.trim();
+            if (!example) {
+                exampleTranslationInput.value = "";
+                exampleTranslationInput.placeholder = "";
+                lastExample = "";
+                return;
+            }
+            if (example === lastExample) {
+                exampleTranslationInput.placeholder = "";
+                return;
+            }
+            if (example === originalExample && originalExampleTranslation) {
+                exampleTranslationInput.value = originalExampleTranslation;
+                exampleTranslationInput.placeholder = "";
+                lastExample = example;
+                return;
+            }
+            exampleTimer = setTimeout(() => {
+                exampleTimer = null;
+                if (!popup.isConnected) return;
+                const pending = translateField(example, exampleTranslationInput, request, () => exampleRequest, (value) => {
+                    lastExample = value;
+                });
+                examplePromise = pending;
+                pending.finally(() => {
+                    if (examplePromise === pending) examplePromise = null;
+                });
+            }, translateDelay);
+        };
         const popup = this.createPopup("Edit word", {
-            "Save": () => {
+            "Save": async () => {
+                clearTimeout(wordTimer);
+                clearTimeout(exampleTimer);
+                wordTimer = null;
+                exampleTimer = null;
+                if (wordPromise) {
+                    try {
+                        await wordPromise;
+                    } catch (e) {}
+                }
+                if (examplePromise) {
+                    try {
+                        await examplePromise;
+                    } catch (e) {}
+                }
                 const word = wordInput.value.trim();
-                const translation = translationInput.value.trim();
+                let translation = translationInput.value.trim();
                 const example = exampleInput.value.trim();
-                const exampleTranslation = exampleTranslationInput.value.trim();
+                let exampleTranslation = exampleTranslationInput.value.trim();
                 if (!word) {
                     wordInput.focus();
                     return;
                 }
-                if (!translation) {
-                    translationInput.focus();
-                    return;
-                }
                 if (!example) {
                     exampleInput.focus();
+                    return;
+                }
+                if (word !== lastWord) {
+                    try {
+                        translation = (await this.translateText(word, fromLang, toLang)).trim();
+                        translationInput.value = translation;
+                        lastWord = word;
+                    } catch (e) {
+                        if (this.ejs.debug) console.log("word translate error:", e);
+                        setStatus("Translation failed");
+                        return;
+                    }
+                }
+                if (example !== lastExample) {
+                    try {
+                        exampleTranslation = (await this.translateText(example, fromLang, toLang)).trim();
+                        exampleTranslationInput.value = exampleTranslation;
+                        lastExample = example;
+                    } catch (e) {
+                        if (this.ejs.debug) console.log("example translate error:", e);
+                        setStatus("Translation failed");
+                        return;
+                    }
+                }
+                if (!translation) {
+                    translationInput.focus();
                     return;
                 }
                 const duplicate = collection.cards.some((saved, i) => {
@@ -517,7 +657,11 @@ class EJS_Frontend {
                 this.saveAnkiState();
                 this.openAnkiExport();
             },
-            "Cancel": () => this.openAnkiExport()
+            "Cancel": () => {
+                clearTimeout(wordTimer);
+                clearTimeout(exampleTimer);
+                this.openAnkiExport();
+            }
         });
         const body = this.ejs.createElement("div");
         body.classList.add("ejs_save_word_body");
@@ -540,9 +684,11 @@ class EJS_Frontend {
         body.appendChild(makeField("Word translation", translationInput));
         body.appendChild(makeField("Example", exampleInput));
         body.appendChild(makeField("Example translation", exampleTranslationInput));
-        const status = this.ejs.createElement("div");
+        status = this.ejs.createElement("div");
         status.classList.add("ejs_save_word_status");
         body.appendChild(status);
+        wordInput.addEventListener("input", scheduleWordTranslation);
+        exampleInput.addEventListener("input", scheduleExampleTranslation);
         wordInput.focus();
         wordInput.select();
     }
@@ -1188,11 +1334,13 @@ class EJS_Frontend {
                 this.dualHinge.style.height = "";
             }
             if (this.virtualGamepad) {
-                const bottom = this.virtualGamepad.querySelector(".ejs_virtualGamepad_bottom");
-                if (bottom) {
-                    bottom.style.left = "";
-                    bottom.style.marginLeft = "";
-                    bottom.style.right = "";
+                for (const selector of [".ejs_virtualGamepad_left", ".ejs_virtualGamepad_right", ".ejs_virtualGamepad_bottom"]) {
+                    const cluster = this.virtualGamepad.querySelector(selector);
+                    if (!cluster) continue;
+                    cluster.style.left = "";
+                    cluster.style.right = "";
+                    cluster.style.marginLeft = "";
+                    cluster.classList.remove("ejs_dual_controls_overlay");
                 }
             }
             if (this.dualPadTranslateButton) {
@@ -1205,6 +1353,7 @@ class EJS_Frontend {
                 this.dsTranslateButton.style.top = "";
                 this.dsTranslateButton.style.right = "";
                 this.dsTranslateButton.style.bottom = "";
+                this.dsTranslateButton.classList.remove("ejs_dual_controls_overlay");
             }
             if (this.virtualGamepad) {
                 this.virtualGamepad.style.left = "";
@@ -1257,6 +1406,10 @@ class EJS_Frontend {
             const screenHeight = Math.floor(panelHeight / 2);
             const screenTop = gameTop + panelHeight - screenHeight;
             const frameInset = 18;
+            const frameLeft = gameLeft - frameInset;
+            const frameRight = gameLeft + panelWidth + frameInset;
+            const frameTop = gameTop - frameInset;
+            const frameBottom = gameTop + panelHeight + frameInset;
             this.dualPanel.style.left = gameLeft + "px";
             this.dualPanel.style.top = screenTop + "px";
             this.dualPanel.style.width = panelWidth + "px";
@@ -1275,39 +1428,60 @@ class EJS_Frontend {
                 this.dualHinge.style.height = hingeHeight + "px";
             }
             if (this.virtualGamepad) {
-                const bottom = this.virtualGamepad.querySelector(".ejs_virtualGamepad_bottom");
-                if (bottom) {
-                    const vpr = this.virtualGamepad.getBoundingClientRect();
-                    const layoutWidth = this.virtualGamepad.offsetWidth || vpr.width;
-                    const scale = layoutWidth ? vpr.width / layoutWidth : 1;
-                    const originX = layoutWidth / 2;
-                    const layoutLeft = vpr.left - originX * (1 - scale);
-                    const bw = bottom.offsetWidth || 148;
-                    const frameRight = gameLeft + panelWidth + frameInset;
-                    const sideSpace = gr.width - frameRight;
-                    const outside = sideSpace >= bw + 16;
-                    const desiredAbs = outside ?
-                        gr.left + frameRight + 16 :
-                        gr.left + gameLeft + panelWidth - bw - 12;
-                    const left = originX + (desiredAbs - layoutLeft - originX) / scale;
-                    bottom.style.left = Math.round(left) + "px";
-                    bottom.style.marginLeft = "0px";
-                    bottom.style.right = "auto";
+                const leftCluster = this.virtualGamepad.querySelector(".ejs_virtualGamepad_left");
+                const rightCluster = this.virtualGamepad.querySelector(".ejs_virtualGamepad_right");
+                const bottomCluster = this.virtualGamepad.querySelector(".ejs_virtualGamepad_bottom");
+                for (const cluster of [leftCluster, rightCluster, bottomCluster]) {
+                    if (!cluster) continue;
+                    cluster.style.left = "";
+                    cluster.style.right = "";
+                    cluster.style.marginLeft = "";
+                    cluster.classList.remove("ejs_dual_controls_overlay");
                 }
+                const gamepadRect = this.virtualGamepad.getBoundingClientRect();
+                const gamepadLeft = gamepadRect.width ? gamepadRect.left - gr.left : 0;
+                const edge = 10;
+                const gap = 8;
+                const controlScale = 0.9;
+                const leftWidth = (leftCluster ? (leftCluster.offsetWidth || 125) : 125) * controlScale;
+                const rightWidth = (rightCluster ? (rightCluster.offsetWidth || 130) : 130) * controlScale;
+                const fitsLeft = frameLeft >= edge + leftWidth + gap;
+                const fitsRight = (gr.width - frameRight) >= edge + rightWidth + gap;
+                const outside = fitsLeft && fitsRight;
+                if (leftCluster) {
+                    const x = outside ? edge : Math.max(8, frameLeft + gap);
+                    leftCluster.style.left = Math.round(x - gamepadLeft) + "px";
+                    leftCluster.style.right = "auto";
+                }
+                if (rightCluster) {
+                    const rightEdge = outside ? gr.width - edge : Math.min(gr.width - 8, frameRight - gap);
+                    rightCluster.style.right = Math.round(gamepadLeft + gr.width - rightEdge) + "px";
+                    rightCluster.style.left = "auto";
+                }
+                if (bottomCluster) {
+                    const bw = bottomCluster.offsetWidth || 148;
+                    const sideSpace = gr.width - frameRight;
+                    const centered = gameLeft + (panelWidth - bw) / 2;
+                    const x = sideSpace >= bw + gap ? frameRight + gap : Math.max(8, Math.min(gr.width - bw - 8, centered));
+                    bottomCluster.style.left = Math.round(x - gamepadLeft) + "px";
+                    bottomCluster.style.marginLeft = "0px";
+                    bottomCluster.style.right = "auto";
+                }
+                this.updateDualControlOverlay([leftCluster, rightCluster, bottomCluster], gr, frameLeft, frameTop, frameRight, frameBottom);
             }
             if (this.dsTranslateButton) {
                 const bw = this.dsTranslateButton.offsetWidth || 45;
                 const bh = this.dsTranslateButton.offsetHeight || 28;
-                const sideSpace = gr.width - (gameLeft + panelWidth + frameInset);
-                const outside = sideSpace >= bw + 16;
-                this.dsTranslateButton.style.left = (outside ?
-                    gameLeft + panelWidth + frameInset + 16 :
-                    gameLeft + panelWidth - bw - 12) + "px";
+                const sideSpace = gr.width - frameRight;
+                const outside = sideSpace >= bw + gap;
+                const x = outside ? frameRight + gap : Math.max(8, Math.min(gr.width - bw - 8, gameLeft + panelWidth - bw - 12));
+                this.dsTranslateButton.style.left = Math.round(x) + "px";
                 this.dsTranslateButton.style.top = (outside ?
                     screenTop + Math.round((screenHeight - bh) / 2) :
                     screenTop + 12) + "px";
                 this.dsTranslateButton.style.right = "auto";
                 this.dsTranslateButton.style.bottom = "auto";
+                this.updateDualControlOverlay([this.dsTranslateButton], gr, frameLeft, frameTop, frameRight, frameBottom);
             }
             return;
         }
@@ -1349,6 +1523,18 @@ class EJS_Frontend {
                     this.dualPadTranslateButton.style.bottom = "auto";
                 }
             }
+        }
+    }
+    updateDualControlOverlay(elements, gr, frameLeft, frameTop, frameRight, frameBottom) {
+        const left = gr.left + frameLeft;
+        const top = gr.top + frameTop;
+        const right = gr.left + frameRight;
+        const bottom = gr.top + frameBottom;
+        for (const element of elements) {
+            if (!element) continue;
+            const rect = element.getBoundingClientRect();
+            const intersects = rect.right > left && rect.left < right && rect.bottom > top && rect.top < bottom;
+            element.classList.toggle("ejs_dual_controls_overlay", intersects);
         }
     }
     showVirtualGamepad() {
@@ -3552,6 +3738,7 @@ class EJS_Frontend {
         this.virtualGamepad = this.ejs.createElement("div");
         this.toggleVirtualGamepad = (show) => {
             this.virtualGamepad.style.display = show ? "" : "none";
+            if (show && this.dualScreenEnabled) requestAnimationFrame(() => this.syncDualScreenSize());
         }
         this.virtualGamepad.classList.add("ejs_virtualGamepad_parent");
         this.elements.parent.appendChild(this.virtualGamepad);
@@ -3882,6 +4069,7 @@ class EJS_Frontend {
             right.classList.toggle("ejs_virtualGamepad_right", !enabled);
             left.classList.toggle("ejs_virtualGamepad_right", enabled);
             right.classList.toggle("ejs_virtualGamepad_left", enabled);
+            if (this.dualScreenEnabled) requestAnimationFrame(() => this.syncDualScreenSize());
         }
 
         const leftHandedMode = false;
