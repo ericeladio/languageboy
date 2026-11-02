@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="og-title og-desc">
+  <title id="og-title">LanguageBoy</title>
+  <desc id="og-desc">Preview de LanguageBoy, traductor de GBA y NDS con exportación a Anki.</desc>
+
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="0%" r="75%">
+      <stop offset="0%" stop-color="#1aafff" stop-opacity="0.22"/>
+      <stop offset="55%" stop-color="#1aafff" stop-opacity="0.05"/>
+      <stop offset="100%" stop-color="#1aafff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow2" cx="12%" cy="100%" r="55%">
+      <stop offset="0%" stop-color="#4d9df7" stop-opacity="0.14"/>
+      <stop offset="100%" stop-color="#4d9df7" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="line" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#4da9ff" stop-opacity="0"/>
+      <stop offset="50%" stop-color="#4da9ff" stop-opacity="0.7"/>
+      <stop offset="100%" stop-color="#4da9ff" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="logoGlow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="10" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="630" fill="#05070a"/>
+  <rect width="1200" height="630" fill="url(#glow)"/>
+  <rect width="1200" height="630" fill="url(#glow2)"/>
+
+  <g transform="translate(536 62) scale(0.25)" filter="url(#logoGlow)">
+    <g stroke-linejoin="round" stroke-linecap="round">
+      <rect x="109" y="9" width="294" height="494" rx="42" fill="#ffffff" stroke="#084fa3" stroke-width="14"/>
+      <rect x="135" y="34" width="66" height="15" rx="7.5" fill="#084fa3"/>
+      <circle cx="219" cy="41.5" r="8" fill="#084fa3"/>
+      <rect x="135" y="57" width="228" height="198" rx="18" fill="#084fa3"/>
+      <rect x="148" y="70" width="202" height="172" rx="10" fill="#4d9df7"/>
+      <rect x="160" y="82" width="178" height="148" rx="3" fill="#ffffff" stroke="#084fa3" stroke-width="4"/>
+      <rect x="155" y="288" width="44" height="100" rx="8" fill="#084fa3"/>
+      <rect x="127" y="316" width="100" height="44" rx="8" fill="#084fa3"/>
+      <rect x="167" y="300" width="20" height="76" rx="4" fill="#4d9df7"/>
+      <rect x="139" y="328" width="76" height="20" rx="4" fill="#4d9df7"/>
+      <circle cx="283" cy="357" r="31" fill="#084fa3"/>
+      <circle cx="283" cy="357" r="17" fill="#4d9df7"/>
+      <circle cx="339" cy="306" r="31" fill="#084fa3"/>
+      <circle cx="339" cy="306" r="17" fill="#4d9df7"/>
+      <rect x="174" y="403" width="12" height="36" rx="6" fill="#084fa3" transform="rotate(35 180 421)"/>
+      <rect x="226" y="403" width="12" height="36" rx="6" fill="#084fa3" transform="rotate(35 232 421)"/>
+      <rect x="298" y="424" width="12" height="44" rx="6" fill="#084fa3" transform="rotate(35 304 446)"/>
+      <rect x="318" y="424" width="12" height="44" rx="6" fill="#084fa3" transform="rotate(35 324 446)"/>
+      <rect x="338" y="424" width="12" height="44" rx="6" fill="#084fa3" transform="rotate(35 344 446)"/>
+      <rect x="358" y="424" width="12" height="44" rx="6" fill="#084fa3" transform="rotate(35 364 446)"/>
+    </g>
+  </g>
+
+  <text x="600" y="338" text-anchor="middle" font-family="'SF Mono', Menlo, Consolas, monospace" font-size="82" font-weight="600" letter-spacing="-1" fill="#eaf6ff">LanguageBoy</text>
+
+  <text x="600" y="396" text-anchor="middle" font-family="'SF Mono', Menlo, Consolas, monospace" font-size="32" font-weight="500" letter-spacing="1" fill="#9fc7ea">Traductor de GBA · NDS</text>
+
+  <rect x="300" y="432" width="600" height="2" fill="url(#line)"/>
+
+  <g font-family="'SF Mono', Menlo, Consolas, monospace" font-size="25" font-weight="600" text-anchor="middle">
+    <rect x="163" y="474" width="180" height="58" rx="29" fill="#0b1826" stroke="#1c5f96" stroke-width="2"/>
+    <text x="253" y="511" fill="#4da9ff">GBA · NDS</text>
+
+    <rect x="375" y="474" width="330" height="58" rx="29" fill="#0b1826" stroke="#1c5f96" stroke-width="2"/>
+    <text x="540" y="511" fill="#9fc7ea">Traducción en vivo</text>
+
+    <rect x="737" y="474" width="300" height="58" rx="29" fill="#0b1826" stroke="#1c5f96" stroke-width="2"/>
+    <text x="887" y="511" fill="#9fc7ea">Exporta a Anki</text>
+  </g>
+
+  <text x="600" y="588" text-anchor="middle" font-family="'SF Mono', Menlo, Consolas, monospace" font-size="22" letter-spacing="3" fill="#5d7f9b">languageboy.vercel.app</text>
+</svg>
